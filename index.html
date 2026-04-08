@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IBSケア</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+      background: #f0fdf4;
+      margin: 0;
+    }
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 90px;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .symptom-chip { cursor: pointer; transition: all 0.15s; }
+    .symptom-chip.selected {
+      background: #10b981; color: white; border-color: #10b981;
+    }
+    .pain-btn { transition: all 0.15s; }
+    .pain-btn.selected {
+      border-color: #10b981 !important;
+      background: #ecfdf5 !important;
+      transform: scale(1.05);
+    }
+    .meal-type-btn { transition: all 0.15s; }
+    .meal-type-btn.selected {
+      border-color: #10b981 !important;
+      background: #ecfdf5 !important;
+    }
+    .role-btn { transition: all 0.15s; }
+    .role-btn.selected {
+      border-color: #10b981 !important;
+      background: #ecfdf5 !important;
+    }
+    .nav-btn { transition: color 0.15s; color: #9ca3af; }
+    .nav-btn.active-nav { color: #10b981; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.25s ease; }
+
+    #toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ===========================
+     LOADING SCREEN
+     =========================== -->
+<div id="screen-loading" class="screen active items-center justify-center">
+  <div class="text-center">
+    <div class="text-7xl mb-4">🌿</div>
+    <h1 class="text-2xl font-bold text-emerald-700">IBSケア</h1>
+    <p class="text-gray-400 mt-2 text-sm">読み込み中...</p>
+    <div class="mt-6 flex justify-center">
+      <div class="w-8 h-8 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================
+     WELCOME SCREEN
+     =========================== -->
+<div id="screen-welcome" class="screen justify-center p-5">
+  <div class="w-full max-w-sm mx-auto mt-10">
+    <div class="text-center mb-8">
+      <div class="text-6xl mb-3">🌿</div>
+      <h1 class="text-3xl font-bold text-emerald-700">IBSケア</h1>
+      <p class="text-gray-400 mt-1 text-sm">家族みんなで症状を記録・共有</p>
+    </div>
+
+    <div class="bg-white rounded-3xl p-6 shadow-sm">
+      <div class="mb-5">
+        <label class="block text-sm font-semibold text-gray-600 mb-2">お名前</label>
+        <input id="input-name" type="text" placeholder="例：そうしろう"
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-emerald-400 text-lg">
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-gray-600 mb-2">あなたは？</label>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="selectRole('child')" id="role-btn-child"
+            class="role-btn py-4 border-2 border-gray-200 rounded-2xl text-center">
+            <div class="text-3xl mb-1">🧒</div>
+            <div class="text-sm font-semibold text-gray-700">子ども</div>
+          </button>
+          <button onclick="selectRole('parent')" id="role-btn-parent"
+            class="role-btn py-4 border-2 border-gray-200 rounded-2xl text-center">
+            <div class="text-3xl mb-1">👨‍👩‍👦</div>
+            <div class="text-sm font-semibold text-gray-700">保護者</div>
+          </button>
+        </div>
+      </div>
+
+      <button onclick="handleWelcomeNext()"
+        class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-lg transition-colors">
+        次へ →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================
+     FAMILY SETUP SCREEN
+     =========================== -->
+<div id="screen-family-setup" class="screen justify-center p-5">
+  <div class="w-full max-w-sm mx-auto mt-8">
+    <div class="text-center mb-6">
+      <button onclick="showScreen('screen-welcome')" class="text-emerald-600 text-sm mb-4 block">← 戻る</button>
+      <div class="text-4xl mb-2">👨‍👩‍👦</div>
+      <h2 class="text-xl font-bold text-gray-800">ファミリー設定</h2>
+      <p class="text-gray-400 text-sm mt-1">ファミリーを作るか、既存のファミリーに参加</p>
+    </div>
+
+    <div class="space-y-4">
+      <div class="bg-white rounded-3xl p-5 shadow-sm">
+        <h3 class="font-bold text-gray-800 mb-1">新しいファミリーを作る</h3>
+        <p class="text-xs text-gray-400 mb-4">6桁のコードが自動生成されます</p>
+        <button onclick="handleCreateFamily()"
+          class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-semibold transition-colors">
+          ファミリーを作成する
+        </button>
+      </div>
+
+      <div class="text-center text-gray-300 text-sm font-medium">— または —</div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm">
+        <h3 class="font-bold text-gray-800 mb-1">ファミリーに参加する</h3>
+        <p class="text-xs text-gray-400 mb-3">保護者から共有されたコードを入力</p>
+        <input id="input-family-code" type="text" placeholder="例：K4ZWC4"
+          maxlength="6"
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-400 text-center text-xl font-bold font-mono tracking-widest uppercase mb-3">
+        <button onclick="handleJoinFamily()"
+          class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-semibold transition-colors">
+          参加する
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================
+     MAIN APP
+     =========================== -->
+<div id="screen-main" class="screen">
+
+  <!-- Header -->
+  <div class="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between flex-shrink-0">
+    <div>
+      <p id="header-name" class="font-bold text-gray-800 text-base"></p>
+      <p id="header-family" class="text-xs text-gray-400"></p>
+    </div>
+    <div id="header-avatar" class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-xl"></div>
+  </div>
+
+  <!-- Tab Contents -->
+  <div class="content-area">
+
+    <!-- ▼ HOME TAB -->
+    <div id="tab-home" class="tab-content active p-4 fade-up">
+      <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-3xl p-5 mb-5 shadow-sm">
+        <p class="text-sm opacity-80 mb-1" id="home-date"></p>
+        <p class="font-bold text-lg" id="home-summary">今日の記録はまだありません</p>
+      </div>
+
+      <h2 class="font-bold text-gray-600 text-sm mb-3">クイック記録</h2>
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <button onclick="showTab('record'); setRecordType('symptoms')"
+          class="bg-white rounded-3xl p-5 shadow-sm text-center active:scale-95 transition-transform">
+          <div class="text-3xl mb-2">🤢</div>
+          <div class="text-sm font-semibold text-gray-700">症状を記録</div>
+        </button>
+        <button onclick="showTab('record'); setRecordType('meals')"
+          class="bg-white rounded-3xl p-5 shadow-sm text-center active:scale-95 transition-transform">
+          <div class="text-3xl mb-2">🍽️</div>
+          <div class="text-sm font-semibold text-gray-700">食事を記録</div>
+        </button>
+      </div>
+
+      <h2 class="font-bold text-gray-600 text-sm mb-3">今日の記録</h2>
+      <div id="home-today-records">
+        <p class="text-gray-300 text-sm text-center py-6">記録がありません</p>
+      </div>
+    </div>
+
+    <!-- ▼ RECORD TAB -->
+    <div id="tab-record" class="tab-content p-4 fade-up">
+      <!-- Toggle -->
+      <div class="bg-gray-100 rounded-2xl p-1 flex mb-5">
+        <button id="toggle-symptoms" onclick="setRecordType('symptoms')"
+          class="flex-1 py-2 rounded-xl text-sm font-semibold transition-all bg-white text-emerald-600 shadow-sm">
+          🤢 症状
+        </button>
+        <button id="toggle-meals" onclick="setRecordType('meals')"
+          class="flex-1 py-2 rounded-xl text-sm font-semibold transition-all text-gray-400">
+          🍽️ 食事
+        </button>
+      </div>
+
+      <!-- Symptoms Form -->
+      <div id="form-symptoms">
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-2">📅 日付</label>
+          <input id="sym-date" type="date"
+            class="w-full px-4 py-2 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-emerald-400 text-sm">
+        </div>
+
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-3">😣 腹痛の強さ</label>
+          <div class="flex gap-2">
+            <button onclick="selectPain(0)" id="pain-0" class="pain-btn flex-1 py-3 border-2 border-gray-200 rounded-2xl text-center">
+              <div class="text-xl">😊</div><div class="text-xs mt-1 text-gray-500">なし</div>
+            </button>
+            <button onclick="selectPain(1)" id="pain-1" class="pain-btn flex-1 py-3 border-2 border-gray-200 rounded-2xl text-center">
+              <div class="text-xl">😐</div><div class="text-xs mt-1 text-gray-500">軽い</div>
+            </button>
+            <button onclick="selectPain(2)" id="pain-2" class="pain-btn flex-1 py-3 border-2 border-gray-200 rounded-2xl text-center">
+              <div class="text-xl">😣</div><div class="text-xs mt-1 text-gray-500">普通</div>
+            </button>
+            <button onclick="selectPain(3)" id="pain-3" class="pain-btn flex-1 py-3 border-2 border-gray-200 rounded-2xl text-center">
+              <div class="text-xl">😖</div><div class="text-xs mt-1 text-gray-500">強い</div>
+            </button>
+            <button onclick="selectPain(4)" id="pain-4" class="pain-btn flex-1 py-3 border-2 border-gray-200 rounded-2xl text-center">
+              <div class="text-xl">😭</div><div class="text-xs mt-1 text-gray-500">激痛</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-3">📋 症状（複数選択可）</label>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="toggleSymptom('diarrhea')" id="chip-diarrhea"
+              class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full text-sm font-medium">下痢</button>
+            <button onclick="toggleSymptom('constipation')" id="chip-constipation"
+              class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full text-sm font-medium">便秘</button>
+            <button onclick="toggleSymptom('bloating')" id="chip-bloating"
+              class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full text-sm font-medium">腹部膨満</button>
+            <button onclick="toggleSymptom('nausea')" id="chip-nausea"
+              class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full text-sm font-medium">吐き気</button>
+            <button onclick="toggleSymptom('urgency')" id="chip-urgency"
+              class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full text-sm font-medium">便意切迫</button>
+            <button onclick="toggleSymptom('mucus')" id="chip-mucus"
+              class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full text-sm font-medium">粘液便</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-5">
+          <label class="block text-sm font-semibold text-gray-600 mb-2">📝 メモ</label>
+          <textarea id="sym-notes" rows="3" placeholder="気になったことを自由に書いてください..."
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-emerald-400 resize-none text-sm"></textarea>
+        </div>
+
+        <button onclick="submitSymptoms()"
+          class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl font-bold text-lg shadow-sm transition-colors active:scale-95">
+          ✓ 記録する
+        </button>
+      </div>
+
+      <!-- Meals Form -->
+      <div id="form-meals" class="hidden">
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-2">📅 日付</label>
+          <input id="meal-date" type="date"
+            class="w-full px-4 py-2 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-emerald-400 text-sm">
+        </div>
+
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-3">🕐 食事の種類</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="selectMealType('breakfast')" id="meal-breakfast"
+              class="meal-type-btn py-3 border-2 border-gray-200 rounded-2xl text-sm font-semibold transition-all">🌅 朝食</button>
+            <button onclick="selectMealType('lunch')" id="meal-lunch"
+              class="meal-type-btn py-3 border-2 border-gray-200 rounded-2xl text-sm font-semibold transition-all">☀️ 昼食</button>
+            <button onclick="selectMealType('dinner')" id="meal-dinner"
+              class="meal-type-btn py-3 border-2 border-gray-200 rounded-2xl text-sm font-semibold transition-all">🌙 夕食</button>
+            <button onclick="selectMealType('snack')" id="meal-snack"
+              class="meal-type-btn py-3 border-2 border-gray-200 rounded-2xl text-sm font-semibold transition-all">🍪 間食</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-2">🍱 食べたもの</label>
+          <textarea id="meal-foods" rows="3" placeholder="例：ご飯、味噌汁、焼き魚、ほうれん草のおひたし..."
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-emerald-400 resize-none text-sm"></textarea>
+        </div>
+
+        <div class="bg-white rounded-3xl p-5 shadow-sm mb-5">
+          <label class="block text-sm font-semibold text-gray-600 mb-2">📝 メモ</label>
+          <textarea id="meal-notes" rows="2" placeholder="食後の体調など..."
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-emerald-400 resize-none text-sm"></textarea>
+        </div>
+
+        <button onclick="submitMeal()"
+          class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl font-bold text-lg shadow-sm transition-colors active:scale-95">
+          ✓ 記録する
+        </button>
+      </div>
+    </div>
+
+    <!-- ▼ HISTORY TAB -->
+    <div id="tab-history" class="tab-content p-4 fade-up">
+      <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+        <button onclick="filterHistory('all')" id="filter-all"
+          class="flex-shrink-0 px-4 py-2 bg-emerald-500 text-white rounded-full text-sm font-semibold">すべて</button>
+        <button onclick="filterHistory('symptoms')" id="filter-symptoms"
+          class="flex-shrink-0 px-4 py-2 bg-white text-gray-500 rounded-full text-sm font-semibold shadow-sm">🤢 症状</button>
+        <button onclick="filterHistory('meals')" id="filter-meals"
+          class="flex-shrink-0 px-4 py-2 bg-white text-gray-500 rounded-full text-sm font-semibold shadow-sm">🍽️ 食事</button>
+      </div>
+      <div id="history-list">
+        <p class="text-gray-300 text-sm text-center py-10">記録がありません</p>
+      </div>
+    </div>
+
+    <!-- ▼ FAMILY TAB -->
+    <div id="tab-family" class="tab-content p-4 fade-up">
+
+      <!-- Family Code -->
+      <div class="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-5 mb-5">
+        <p class="text-xs font-semibold text-emerald-600 mb-1">ファミリーコード</p>
+        <div class="flex items-center gap-3">
+          <span id="family-code-display" class="text-3xl font-black font-mono text-emerald-700 tracking-widest"></span>
+          <button onclick="copyFamilyCode()"
+            class="ml-auto px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-xs font-semibold">
+            📋 コピー
+          </button>
+        </div>
+        <p class="text-xs text-emerald-500 mt-2">このコードを家族に共有すると一緒に使えます</p>
+      </div>
+
+      <!-- Members -->
+      <div id="family-members-section">
+        <h2 class="font-bold text-gray-600 text-sm mb-3">メンバー</h2>
+        <div id="family-members-list">
+          <p class="text-gray-300 text-sm text-center py-4">読み込み中...</p>
+        </div>
+      </div>
+
+      <!-- Member Records (parent view) -->
+      <div id="member-records-section" class="hidden mt-4">
+        <div class="flex items-center gap-2 mb-3">
+          <button onclick="closeMemberRecords()"
+            class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">←</button>
+          <h2 id="member-records-title" class="font-bold text-gray-700"></h2>
+        </div>
+        <div id="member-records-list">
+          <p class="text-gray-300 text-sm text-center py-4">読み込み中...</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content-area -->
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <div class="flex">
+      <button onclick="showTab('home')" id="nav-home" class="nav-btn active-nav flex-1 py-3 flex flex-col items-center gap-0.5">
+        <span class="text-2xl">🏠</span>
+        <span class="text-xs font-medium">ホーム</span>
+      </button>
+      <button onclick="showTab('record')" id="nav-record" class="nav-btn flex-1 py-3 flex flex-col items-center gap-0.5">
+        <span class="text-2xl">✏️</span>
+        <span class="text-xs font-medium">記録する</span>
+      </button>
+      <button onclick="showTab('history')" id="nav-history" class="nav-btn flex-1 py-3 flex flex-col items-center gap-0.5">
+        <span class="text-2xl">📋</span>
+        <span class="text-xs font-medium">履歴</span>
+      </button>
+      <button onclick="showTab('family')" id="nav-family" class="nav-btn flex-1 py-3 flex flex-col items-center gap-0.5">
+        <span class="text-2xl">👨‍👩‍👦</span>
+        <span class="text-xs font-medium">ファミリー</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// FIREBASE
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBhU1JW3j5VkZN5X6Yxx79RsraJSGcJrM",
+  authDomain: "ibs-app-57273.firebaseapp.com",
+  databaseURL: "https://ibs-app-57273-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ibs-app-57273",
+  storageBucket: "ibs-app-57273.firebasestorage.app",
+  messagingSenderId: "495989510369",
+  appId: "1:495989510369:web:0f1a8867778184dbc7a7a0"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  userId: null,
+  userName: null,
+  userRole: null,
+  familyCode: null,
+  // form state
+  selectedRole: null,
+  selectedPain: null,
+  selectedSymptoms: new Set(),
+  selectedMealType: null,
+  // history
+  currentFilter: 'all',
+  historyData: []
+};
+
+// ============================================================
+// UTILS
+// ============================================================
+function genUserId() {
+  return 'u' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function genFamilyCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function jaDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  const wd = ['日','月','火','水','木','金','土'];
+  return `${d.getMonth()+1}月${d.getDate()}日（${wd[d.getDay()]}）`;
+}
+
+function jaDateShort(str) {
+  const d = new Date(str + 'T00:00:00');
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ============================================================
+// SCREEN MANAGEMENT
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active-nav'));
+  document.getElementById('nav-' + tab).classList.add('active-nav');
+
+  state.currentTab = tab;
+  if (tab === 'home')    loadHomeTab();
+  if (tab === 'history') loadHistory();
+  if (tab === 'family')  loadFamilyTab();
+  if (tab === 'record')  resetRecordForm();
+}
+
+// ============================================================
+// ONBOARDING
+// ============================================================
+function selectRole(role) {
+  state.selectedRole = role;
+  document.querySelectorAll('.role-btn').forEach(el => el.classList.remove('selected'));
+  document.getElementById('role-btn-' + role).classList.add('selected');
+}
+
+function handleWelcomeNext() {
+  const name = document.getElementById('input-name').value.trim();
+  if (!name) { showToast('⚠️ お名前を入力してください'); return; }
+  if (!state.selectedRole) { showToast('⚠️ 役割を選択してください'); return; }
+  state.userName = name;
+  state.userRole = state.selectedRole;
+  showScreen('screen-family-setup');
+}
+
+async function handleCreateFamily() {
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = '作成中...';
+
+  try {
+    let code, exists = true;
+    while (exists) {
+      code = genFamilyCode();
+      const snap = await db.ref('families/' + code).once('value');
+      exists = snap.exists();
+    }
+    if (!state.userId) state.userId = genUserId();
+
+    await db.ref('families/' + code).set({ createdAt: new Date().toISOString() });
+    await db.ref(`families/${code}/members/${state.userId}`).set({
+      userId: state.userId,
+      userName: state.userName,
+      userRole: state.userRole,
+      joinedAt: new Date().toISOString()
+    });
+
+    state.familyCode = code;
+    saveStorage();
+    initMainApp();
+  } catch(e) {
+    showToast('⚠️ エラーが発生しました');
+    btn.disabled = false;
+    btn.textContent = 'ファミリーを作成する';
+  }
+}
+
+async function handleJoinFamily() {
+  const code = document.getElementById('input-family-code').value.trim().toUpperCase();
+  if (code.length !== 6) { showToast('⚠️ 6桁のコードを入力してください'); return; }
+
+  const snap = await db.ref('families/' + code).once('value');
+  if (!snap.exists()) { showToast('⚠️ ファミリーが見つかりません'); return; }
+
+  if (!state.userId) state.userId = genUserId();
+
+  await db.ref(`families/${code}/members/${state.userId}`).set({
+    userId: state.userId,
+    userName: state.userName,
+    userRole: state.userRole,
+    joinedAt: new Date().toISOString()
+  });
+
+  state.familyCode = code;
+  saveStorage();
+  initMainApp();
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function saveStorage() {
+  localStorage.setItem('ibs_v2_userId',     state.userId);
+  localStorage.setItem('ibs_v2_userName',   state.userName);
+  localStorage.setItem('ibs_v2_userRole',   state.userRole);
+  localStorage.setItem('ibs_v2_familyCode', state.familyCode);
+}
+
+function loadStorage() {
+  state.userId     = localStorage.getItem('ibs_v2_userId');
+  state.userName   = localStorage.getItem('ibs_v2_userName');
+  state.userRole   = localStorage.getItem('ibs_v2_userRole');
+  state.familyCode = localStorage.getItem('ibs_v2_familyCode');
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function initMainApp() {
+  document.getElementById('header-name').textContent   = state.userName + 'さん';
+  document.getElementById('header-family').textContent = 'コード：' + state.familyCode;
+  document.getElementById('header-avatar').textContent = state.userRole === 'parent' ? '👨‍👩‍👦' : '🧒';
+  showScreen('screen-main');
+  showTab('home');
+}
+
+// ============================================================
+// HOME TAB
+// ============================================================
+async function loadHomeTab() {
+  const t = today();
+  document.getElementById('home-date').textContent = jaDate(t);
+
+  try {
+    const [symSnap, mealSnap] = await Promise.all([
+      db.ref(`families/${state.familyCode}/records/${state.userId}/symptoms`)
+        .orderByChild('date').equalTo(t).once('value'),
+      db.ref(`families/${state.familyCode}/records/${state.userId}/meals`)
+        .orderByChild('date').equalTo(t).once('value')
+    ]);
+
+    const syms  = Object.values(symSnap.val()  || {});
+    const meals = Object.values(mealSnap.val() || {});
+    const total = syms.length + meals.length;
+
+    document.getElementById('home-summary').textContent = total === 0
+      ? '今日の記録はまだありません'
+      : `症状 ${syms.length}件・食事 ${meals.length}件を記録済み`;
+
+    const all = [...syms.map(r => ({...r, type:'symptoms'})), ...meals.map(r => ({...r, type:'meals'}))];
+    const el = document.getElementById('home-today-records');
+    el.innerHTML = all.length
+      ? all.map(r => r.type === 'symptoms' ? symCard(r) : mealCard(r)).join('')
+      : '<p class="text-gray-300 text-sm text-center py-6">記録がありません</p>';
+  } catch(e) { console.error(e); }
+}
+
+// ============================================================
+// RECORD FORM
+// ============================================================
+function setRecordType(type) {
+  const isSym = type === 'symptoms';
+  document.getElementById('form-symptoms').classList.toggle('hidden', !isSym);
+  document.getElementById('form-meals').classList.toggle('hidden', isSym);
+
+  const ts = document.getElementById('toggle-symptoms');
+  const tm = document.getElementById('toggle-meals');
+  if (isSym) {
+    ts.classList.add('bg-white','text-emerald-600','shadow-sm');
+    ts.classList.remove('text-gray-400');
+    tm.classList.remove('bg-white','text-emerald-600','shadow-sm');
+    tm.classList.add('text-gray-400');
+  } else {
+    tm.classList.add('bg-white','text-emerald-600','shadow-sm');
+    tm.classList.remove('text-gray-400');
+    ts.classList.remove('bg-white','text-emerald-600','shadow-sm');
+    ts.classList.add('text-gray-400');
+  }
+}
+
+function resetRecordForm() {
+  // symptoms
+  document.getElementById('sym-date').value = today();
+  document.getElementById('sym-notes').value = '';
+  state.selectedPain = null;
+  state.selectedSymptoms = new Set();
+  document.querySelectorAll('.pain-btn').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.symptom-chip').forEach(el => el.classList.remove('selected'));
+  // meals
+  document.getElementById('meal-date').value = today();
+  document.getElementById('meal-foods').value = '';
+  document.getElementById('meal-notes').value = '';
+  state.selectedMealType = null;
+  document.querySelectorAll('.meal-type-btn').forEach(el => el.classList.remove('selected'));
+  setRecordType('symptoms');
+}
+
+function selectPain(level) {
+  state.selectedPain = level;
+  document.querySelectorAll('.pain-btn').forEach(el => el.classList.remove('selected'));
+  document.getElementById('pain-' + level).classList.add('selected');
+}
+
+function toggleSymptom(s) {
+  const chip = document.getElementById('chip-' + s);
+  if (state.selectedSymptoms.has(s)) {
+    state.selectedSymptoms.delete(s);
+    chip.classList.remove('selected');
+  } else {
+    state.selectedSymptoms.add(s);
+    chip.classList.add('selected');
+  }
+}
+
+function selectMealType(type) {
+  state.selectedMealType = type;
+  document.querySelectorAll('.meal-type-btn').forEach(el => el.classList.remove('selected'));
+  document.getElementById('meal-' + type).classList.add('selected');
+}
+
+async function submitSymptoms() {
+  const date = document.getElementById('sym-date').value;
+  if (!date) { showToast('⚠️ 日付を選択してください'); return; }
+
+  const record = {
+    date,
+    painLevel: state.selectedPain !== null ? state.selectedPain : -1,
+    symptoms: Object.fromEntries([...state.selectedSymptoms].map(s => [s, true])),
+    notes: document.getElementById('sym-notes').value.trim(),
+    createdAt: new Date().toISOString(),
+    type: 'symptoms'
+  };
+
+  await db.ref(`families/${state.familyCode}/records/${state.userId}/symptoms`).push(record);
+  showToast('✅ 症状を記録しました！');
+  showTab('home');
+}
+
+async function submitMeal() {
+  const date  = document.getElementById('meal-date').value;
+  const foods = document.getElementById('meal-foods').value.trim();
+  if (!date)                  { showToast('⚠️ 日付を選択してください'); return; }
+  if (!foods)                  { showToast('⚠️ 食べたものを入力してください'); return; }
+  if (!state.selectedMealType) { showToast('⚠️ 食事の種類を選択してください'); return; }
+
+  const record = {
+    date,
+    mealType: state.selectedMealType,
+    foods,
+    notes: document.getElementById('meal-notes').value.trim(),
+    createdAt: new Date().toISOString(),
+    type: 'meals'
+  };
+
+  await db.ref(`families/${state.familyCode}/records/${state.userId}/meals`).push(record);
+  showToast('✅ 食事を記録しました！');
+  showTab('home');
+}
+
+// ============================================================
+// HISTORY TAB
+// ============================================================
+async function loadHistory() {
+  const el = document.getElementById('history-list');
+  el.innerHTML = '<p class="text-gray-300 text-sm text-center py-10">読み込み中...</p>';
+
+  try {
+    const [sSnap, mSnap] = await Promise.all([
+      db.ref(`families/${state.familyCode}/records/${state.userId}/symptoms`)
+        .orderByChild('date').once('value'),
+      db.ref(`families/${state.familyCode}/records/${state.userId}/meals`)
+        .orderByChild('date').once('value')
+    ]);
+
+    const syms  = []; sSnap.forEach(c => syms.push({...c.val(), _id: c.key, type:'symptoms'}));
+    const meals = []; mSnap.forEach(c => meals.push({...c.val(), _id: c.key, type:'meals'}));
+
+    state.historyData = [...syms, ...meals].sort((a,b) => b.date.localeCompare(a.date));
+    renderHistory();
+  } catch(e) {
+    el.innerHTML = '<p class="text-red-300 text-sm text-center py-10">読み込みエラー</p>';
+  }
+}
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  let data = state.currentFilter === 'all'
+    ? state.historyData
+    : state.historyData.filter(r => r.type === state.currentFilter);
+
+  if (!data.length) {
+    el.innerHTML = '<p class="text-gray-300 text-sm text-center py-10">記録がありません</p>';
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  data.forEach(r => (groups[r.date] = groups[r.date] || []).push(r));
+
+  let html = '';
+  Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(d => {
+    html += `<p class="text-xs font-bold text-gray-400 mt-4 mb-2">${jaDate(d)}</p>`;
+    groups[d].forEach(r => { html += r.type === 'symptoms' ? symCard(r) : mealCard(r); });
+  });
+  el.innerHTML = html;
+}
+
+function filterHistory(f) {
+  state.currentFilter = f;
+  ['all','symptoms','meals'].forEach(id => {
+    const btn = document.getElementById('filter-' + id);
+    btn.classList.toggle('bg-emerald-500', id === f);
+    btn.classList.toggle('text-white',     id === f);
+    btn.classList.toggle('bg-white',       id !== f);
+    btn.classList.toggle('text-gray-500',  id !== f);
+  });
+  renderHistory();
+}
+
+// ============================================================
+// CARD TEMPLATES
+// ============================================================
+const PAIN_EMOJI  = ['😊','😐','😣','😖','😭'];
+const PAIN_LABEL  = ['なし','軽い','普通','強い','激痛'];
+const SYM_LABEL   = { diarrhea:'下痢', constipation:'便秘', bloating:'腹部膨満', nausea:'吐き気', urgency:'便意切迫', mucus:'粘液便' };
+const MEAL_LABEL  = { breakfast:'🌅 朝食', lunch:'☀️ 昼食', dinner:'🌙 夕食', snack:'🍪 間食' };
+
+function symCard(r) {
+  const pain = r.painLevel >= 0 ? `<span class="ml-auto text-sm">${PAIN_EMOJI[r.painLevel]} ${PAIN_LABEL[r.painLevel]}</span>` : '';
+  const syms = r.symptoms ? Object.keys(r.symptoms).map(s => SYM_LABEL[s]).filter(Boolean).join(' · ') : '';
+  return `
+    <div class="bg-white rounded-2xl p-4 shadow-sm mb-2">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">症状</span>
+        ${pain}
+      </div>
+      ${syms  ? `<p class="text-sm text-gray-600 mt-1">${syms}</p>` : ''}
+      ${r.notes ? `<p class="text-xs text-gray-400 mt-1">${r.notes}</p>` : ''}
+    </div>`;
+}
+
+function mealCard(r) {
+  return `
+    <div class="bg-white rounded-2xl p-4 shadow-sm mb-2">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">${MEAL_LABEL[r.mealType] || '食事'}</span>
+      </div>
+      ${r.foods ? `<p class="text-sm text-gray-700 mt-1">${r.foods}</p>` : ''}
+      ${r.notes ? `<p class="text-xs text-gray-400 mt-1">${r.notes}</p>` : ''}
+    </div>`;
+}
+
+// ============================================================
+// FAMILY TAB
+// ============================================================
+async function loadFamilyTab() {
+  document.getElementById('family-code-display').textContent = state.familyCode;
+  document.getElementById('member-records-section').classList.add('hidden');
+
+  const el = document.getElementById('family-members-list');
+  el.innerHTML = '<p class="text-gray-300 text-sm text-center py-4">読み込み中...</p>';
+
+  try {
+    const snap = await db.ref(`families/${state.familyCode}/members`).once('value');
+    const members = Object.values(snap.val() || {});
+
+    if (!members.length) {
+      el.innerHTML = '<p class="text-gray-300 text-sm text-center py-4">メンバーがいません</p>';
+      return;
+    }
+
+    el.innerHTML = members.map(m => {
+      const isMe      = m.userId === state.userId;
+      const canView   = state.userRole === 'parent' && !isMe;
+      return `
+        <div class="bg-white rounded-2xl p-4 shadow-sm mb-2 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-xl">
+            ${m.userRole === 'parent' ? '👨‍👩‍👦' : '🧒'}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-gray-800">${m.userName}${isMe ? ' <span class="text-xs text-emerald-500">(あなた)</span>' : ''}</p>
+            <p class="text-xs text-gray-400">${m.userRole === 'parent' ? '保護者' : '子ども'}</p>
+          </div>
+          ${canView ? `
+            <button onclick="viewMemberRecords('${m.userId}','${m.userName}')"
+              class="flex-shrink-0 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-semibold">
+              記録を見る
+            </button>` : ''}
+        </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<p class="text-red-300 text-sm text-center">読み込みエラー</p>';
+  }
+}
+
+async function viewMemberRecords(userId, userName) {
+  document.getElementById('member-records-title').textContent = userName + 'さんの記録';
+  document.getElementById('member-records-section').classList.remove('hidden');
+  document.getElementById('member-records-section').scrollIntoView({ behavior: 'smooth' });
+
+  const el = document.getElementById('member-records-list');
+  el.innerHTML = '<p class="text-gray-300 text-sm text-center py-4">読み込み中...</p>';
+
+  const [sSnap, mSnap] = await Promise.all([
+    db.ref(`families/${state.familyCode}/records/${userId}/symptoms`).orderByChild('date').limitToLast(30).once('value'),
+    db.ref(`families/${state.familyCode}/records/${userId}/meals`).orderByChild('date').limitToLast(30).once('value')
+  ]);
+
+  const recs = [];
+  sSnap.forEach(c => recs.push({...c.val(), type:'symptoms'}));
+  mSnap.forEach(c => recs.push({...c.val(), type:'meals'}));
+  recs.sort((a,b) => b.date.localeCompare(a.date));
+
+  if (!recs.length) { el.innerHTML = '<p class="text-gray-300 text-sm text-center py-4">記録がありません</p>'; return; }
+
+  const groups = {};
+  recs.forEach(r => (groups[r.date] = groups[r.date] || []).push(r));
+
+  let html = '';
+  Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(d => {
+    html += `<p class="text-xs font-bold text-gray-400 mt-3 mb-2">${jaDate(d)}</p>`;
+    groups[d].forEach(r => { html += r.type === 'symptoms' ? symCard(r) : mealCard(r); });
+  });
+  el.innerHTML = html;
+}
+
+function closeMemberRecords() {
+  document.getElementById('member-records-section').classList.add('hidden');
+}
+
+function copyFamilyCode() {
+  navigator.clipboard.writeText(state.familyCode)
+    .then(() => showToast('📋 コードをコピーしました！'))
+    .catch(() => showToast('コード：' + state.familyCode));
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  loadStorage();
+
+  if (state.userId && state.familyCode && state.userName) {
+    try {
+      const snap = await db.ref(`families/${state.familyCode}/members/${state.userId}`).once('value');
+      if (snap.exists()) { initMainApp(); return; }
+    } catch(e) {}
+  }
+
+  showScreen('screen-welcome');
+}
+
+init();
+</script>
+</body>
+</html>
