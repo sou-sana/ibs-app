@@ -403,7 +403,10 @@
     <!-- FODMAP TAB -->
     <div id="tab-fodmap" class="tab-content">
       <div class="p-4">
-        <h2 class="text-base font-bold text-gray-700 mb-1">📋 FODMAPガイド</h2>
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="text-base font-bold text-gray-700">📋 FODMAPガイド</h2>
+          <button onclick="openCustomFodmapModal()" class="flex items-center gap-1 text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-xl font-bold">＋ 追加</button>
+        </div>
         <p class="text-xs text-gray-400 mb-3">Monash大学 FODMAP研究に基づく</p>
 
         <!-- Phase Guide -->
@@ -446,6 +449,15 @@
           <input id="fodmap-search" type="text" placeholder="食品名を入力（例：りんご、パン）"
             oninput="searchFodmap()" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
           <div id="fodmap-search-results" class="mt-2 space-y-1"></div>
+        </div>
+
+        <!-- My FODMAP -->
+        <div id="my-fodmap-section" class="bg-white rounded-2xl shadow-sm p-4 mb-3 hidden">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm font-bold text-emerald-700">⭐ マイFODMAP（自分で追加）</p>
+            <span id="my-fodmap-count" class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">0件</span>
+          </div>
+          <div id="my-fodmap-list" class="space-y-1"></div>
         </div>
 
         <!-- Full List -->
@@ -529,6 +541,55 @@
 
 <!-- TOAST -->
 <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-full shadow-lg z-300 opacity-0 transition-opacity duration-300 pointer-events-none">保存しました</div>
+
+<!-- カスタムFODMAP追加モーダル -->
+<div id="custom-fodmap-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center">
+  <div class="bg-white rounded-t-2xl w-full max-w-md p-5 pb-8">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-bold text-gray-700">🥦 FODMAP食品を追加</p>
+      <button onclick="closeCustomFodmapModal()" class="text-gray-400 text-xl">✕</button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <p class="text-xs text-gray-500 mb-1">食品名 <span class="text-red-400">*</span></p>
+        <input id="cf-name" type="text" placeholder="例：キヌア、チアシード" maxlength="30"
+          class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 mb-1">FODMAPレベル <span class="text-red-400">*</span></p>
+        <div class="flex gap-2">
+          <button onclick="setCfLevel('high')" id="cf-high" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-red-300 text-red-600">⚠️ 高</button>
+          <button onclick="setCfLevel('medium')" id="cf-medium" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-orange-300 text-orange-600">⚡ 中</button>
+          <button onclick="setCfLevel('low')" id="cf-low" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-green-300 text-green-600">✅ 低</button>
+        </div>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 mb-1">カテゴリ</p>
+        <select id="cf-category" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
+          <option value="その他加工食品">その他・不明</option>
+          <option value="野菜">野菜</option>
+          <option value="果物">果物</option>
+          <option value="穀物・パン">穀物・パン</option>
+          <option value="肉・魚・卵">肉・魚・卵</option>
+          <option value="乳製品">乳製品</option>
+          <option value="豆類・大豆">豆類・大豆</option>
+          <option value="調味料・甘味料">調味料・甘味料</option>
+          <option value="飲み物">飲み物</option>
+          <option value="きのこ">きのこ</option>
+        </select>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 mb-1">メモ（根拠・出典など）</p>
+        <input id="cf-note" type="text" placeholder="例：〇〇サイト調べ、少量なら可" maxlength="60"
+          class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
+      </div>
+    </div>
+    <div class="flex gap-3 mt-4">
+      <button onclick="closeCustomFodmapModal()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-medium">キャンセル</button>
+      <button onclick="saveCustomFodmap()" class="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold">追加する</button>
+    </div>
+  </div>
+</div>
 
 <!-- 食事確認モーダル -->
 <div id="meal-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center">
@@ -921,6 +982,7 @@ let state = {
   selectedStoolType: null,
   todaySym: [], todayMeal: [], todayStool: [],
   allMembers: {},
+  customFodmap: [],
   geminiApiKey: localStorage.getItem('ibs_gemini_api_key') || '',
   geminiModel: localStorage.getItem('ibs_gemini_model') || 'gemini-1.5-flash',
   aiProvider: localStorage.getItem('ibs_ai_provider') || 'gemini'
@@ -1258,6 +1320,7 @@ function openTab(name) {
   if (name === 'history') renderHistory();
   if (name === 'family') loadMembers();
   if (name === 'record') loadPresets();
+  if (name === 'fodmap') loadCustomFodmap();
 }
 
 // =========================================================
@@ -1380,8 +1443,9 @@ function selectMealType(type) {
 
 function checkFodmapDetailed(text) {
   const results = { high: [], medium: [], low: [] };
-  FODMAP_DB.forEach(food => {
-    const allNames = [food.name, ...food.aliases];
+  const allDb = [...FODMAP_DB, ...state.customFodmap.map(c => ({...c, aliases:[]}))];
+  allDb.forEach(food => {
+    const allNames = [food.name, ...(food.aliases||[])];
     const found = allNames.some(n => n && text.includes(n));
     if (found) results[food.level === 'medium' ? 'medium' : food.level].push(food);
   });
@@ -2331,19 +2395,115 @@ function searchFodmap() {
   const q = document.getElementById('fodmap-search').value.trim();
   const results = document.getElementById('fodmap-search-results');
   if (!q) { results.innerHTML=''; return; }
-  const found = FODMAP_DB.filter(f =>
-    f.name.includes(q) || f.aliases.some(a => a.includes(q))
+  const allDb = [...FODMAP_DB, ...state.customFodmap.map(c => ({...c, aliases:[], _custom:true}))];
+  const found = allDb.filter(f =>
+    f.name.includes(q) || (f.aliases||[]).some(a => a.includes(q))
   );
   if (found.length===0) { results.innerHTML='<p class="text-xs text-gray-400">見つかりません</p>'; return; }
   results.innerHTML = found.map(f => {
     const cls = f.level==='high'?'fodmap-red':f.level==='medium'?'fodmap-orange':'fodmap-green';
     const label = f.level==='high'?'⚠️ 高FODMAP':f.level==='medium'?'⚡ 中FODMAP':'✅ 低FODMAP';
+    const badge = f._custom ? '<span class="text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full ml-1">⭐ マイ</span>' : '';
     return `<div class="p-2 rounded-xl border border-gray-100 bg-white">
       <div class="flex items-center justify-between">
-        <span class="text-sm font-semibold text-gray-700">${f.name}</span>
+        <span class="text-sm font-semibold text-gray-700">${f.name}${badge}</span>
         <span class="fodmap-badge ${cls}">${label}</span>
       </div>
-      <p class="text-xs text-gray-500 mt-0.5">${f.cat} — ${f.note||''}</p>
+      <p class="text-xs text-gray-500 mt-0.5">${f.cat||''} — ${f.note||''}</p>
+    </div>`;
+  }).join('');
+}
+
+// =========================================================
+// CUSTOM FODMAP
+// =========================================================
+let _cfLevel = null;
+
+function openCustomFodmapModal() {
+  _cfLevel = null;
+  document.getElementById('cf-name').value = '';
+  document.getElementById('cf-note').value = '';
+  document.getElementById('cf-category').value = 'その他加工食品';
+  ['high','medium','low'].forEach(l => {
+    const btn = document.getElementById('cf-' + l);
+    btn.classList.remove('ring-2','ring-offset-1');
+  });
+  document.getElementById('custom-fodmap-modal').classList.remove('hidden');
+}
+
+function closeCustomFodmapModal() {
+  document.getElementById('custom-fodmap-modal').classList.add('hidden');
+}
+
+function setCfLevel(level) {
+  _cfLevel = level;
+  ['high','medium','low'].forEach(l => {
+    document.getElementById('cf-' + l).classList.toggle('ring-2', l === level);
+    document.getElementById('cf-' + l).classList.toggle('ring-offset-1', l === level);
+  });
+}
+
+async function saveCustomFodmap() {
+  const name = document.getElementById('cf-name').value.trim();
+  if (!name) { alert('食品名を入力してください'); return; }
+  if (!_cfLevel) { alert('FODMAPレベルを選択してください'); return; }
+  const entry = {
+    name,
+    level: _cfLevel,
+    foodCat: document.getElementById('cf-category').value,
+    cat: _cfLevel === 'high' ? '高FODMAP' : _cfLevel === 'medium' ? '中FODMAP' : '低FODMAP',
+    note: document.getElementById('cf-note').value.trim(),
+    createdBy: state.userId,
+    createdAt: new Date().toISOString()
+  };
+  try {
+    await db.ref(`families/${state.familyCode}/customFodmap`).push(entry);
+    closeCustomFodmapModal();
+    showToast(`「${name}」を追加しました ✅`);
+    await loadCustomFodmap();
+  } catch(e) { alert('保存失敗: ' + e.message); }
+}
+
+async function loadCustomFodmap() {
+  try {
+    const snap = await db.ref(`families/${state.familyCode}/customFodmap`).get();
+    state.customFodmap = [];
+    if (snap.exists()) snap.forEach(c => state.customFodmap.push({id:c.key,...c.val()}));
+    renderMyFodmap();
+  } catch(e) {}
+}
+
+async function deleteCustomFodmap(id, name) {
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  try {
+    await db.ref(`families/${state.familyCode}/customFodmap/${id}`).remove();
+    showToast('削除しました');
+    await loadCustomFodmap();
+  } catch(e) { alert('削除失敗: ' + e.message); }
+}
+
+function renderMyFodmap() {
+  const section = document.getElementById('my-fodmap-section');
+  const list = document.getElementById('my-fodmap-list');
+  const count = document.getElementById('my-fodmap-count');
+  if (!state.customFodmap || state.customFodmap.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  count.textContent = state.customFodmap.length + '件';
+  list.innerHTML = state.customFodmap.map(f => {
+    const cls = f.level==='high'?'fodmap-red':f.level==='medium'?'fodmap-orange':'fodmap-green';
+    const label = f.level==='high'?'⚠️ 高':f.level==='medium'?'⚡ 中':'✅ 低';
+    return `<div class="flex items-center justify-between p-2 rounded-xl bg-gray-50 border border-gray-100">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold text-gray-700">${escHtml(f.name)}</span>
+          <span class="fodmap-badge ${cls}">${label}</span>
+        </div>
+        ${f.note ? `<p class="text-xs text-gray-400 truncate">${escHtml(f.note)}</p>` : ''}
+      </div>
+      <button onclick="deleteCustomFodmap('${f.id}','${escHtml(f.name)}')" class="delete-btn ml-2 shrink-0">削除</button>
     </div>`;
   }).join('');
 }
