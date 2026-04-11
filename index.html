@@ -195,6 +195,70 @@
       <div class="p-4 space-y-4">
         <h2 class="text-base font-bold text-gray-700">記録する</h2>
 
+        <!-- Meal Form -->
+        <div id="meal-form" class="bg-white rounded-2xl shadow-sm p-4">
+          <p class="font-semibold text-gray-700 mb-3">🍽️ 食事を記録</p>
+          <p class="text-xs text-gray-500 mb-2">食事の種類</p>
+          <div class="flex gap-2 mb-4">
+            <button onclick="selectMealType('朝食')" data-meal="朝食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">☀️<br>朝食</button>
+            <button onclick="selectMealType('昼食')" data-meal="昼食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">🌤️<br>昼食</button>
+            <button onclick="selectMealType('夕食')" data-meal="夕食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">🌙<br>夕食</button>
+            <button onclick="selectMealType('間食')" data-meal="間食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">🍪<br>間食</button>
+          </div>
+
+          <!-- AI Photo Analysis -->
+          <div class="mb-4 p-3 bg-purple-50 rounded-xl border border-purple-200">
+            <div class="flex items-center gap-2 mb-1">
+              <p class="text-xs font-bold text-purple-700">📸 AI写真分析</p>
+              <span id="ai-photo-badge" class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">無料</span>
+            </div>
+            <p id="ai-photo-desc" class="text-xs text-purple-600 mb-2">料理の写真を撮るとAIが食材を認識しFODMAPを自動判定します</p>
+            <input type="file" id="photo-input" accept="image/*" capture="environment"
+              onchange="analyzePhoto(this)" class="hidden">
+            <button id="photo-btn" onclick="document.getElementById('photo-input').click()"
+              class="w-full py-2 text-sm bg-purple-500 text-white rounded-xl font-medium mb-2">📷 写真を撮る / 選ぶ</button>
+            <div id="photo-preview-area" class="hidden">
+              <img id="photo-preview-img" src="" class="photo-preview-img mb-2">
+              <div id="ai-analysis-result" class="text-xs text-purple-700 bg-purple-50 rounded-lg p-2"></div>
+            </div>
+            <div id="ai-loading" class="hidden text-center py-2">
+              <span class="text-xs text-purple-600">🤖 AIが解析中...</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">※AIキーが必要です。ファミリータブで設定できます（無料）。</p>
+          </div>
+
+          <!-- よく食べるセット -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-xs text-gray-500">よく食べるセット</p>
+              <button onclick="savePreset()" class="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-lg">+ 現在を保存</button>
+            </div>
+            <div id="preset-chips" class="flex flex-wrap gap-1 min-h-6"></div>
+          </div>
+          <p class="text-xs text-gray-500 mb-1">食べたもの</p>
+          <textarea id="meal-foods" rows="3" placeholder="例：ご飯、味噌汁、豆腐、バナナ（AIが自動入力することもあります）"
+            oninput="updateFodmapPreview()"
+            class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-emerald-400 mb-2"></textarea>
+
+          <!-- FODMAP Preview -->
+          <div id="fodmap-preview" class="hidden mb-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <p class="text-xs font-semibold text-gray-600 mb-2">⚡ FODMAPチェック結果</p>
+            <div id="fodmap-preview-content"></div>
+          </div>
+
+          <textarea id="meal-notes" rows="2" placeholder="食後の体調など（任意）"
+            class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-emerald-400 mb-3"></textarea>
+          <p class="text-xs text-gray-500 mb-1">記録時刻</p>
+          <div class="flex gap-2 mb-3">
+            <input type="time" id="meal-time"
+              class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
+            <button onclick="setNow('meal-time')"
+              class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-medium whitespace-nowrap">今すぐ</button>
+          </div>
+          <div id="meal-error-msg" class="hidden text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2 mb-2 text-center whitespace-pre-line"></div>
+          <button onclick="saveMeal()" class="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold">食事を保存</button>
+        </div>
+
         <!-- Stool Form (Bristol Scale) -->
         <div id="stool-form" class="bg-white rounded-2xl shadow-sm p-4">
           <p class="font-semibold text-gray-700 mb-1">🚽 便の記録</p>
@@ -238,69 +302,6 @@
               class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-medium whitespace-nowrap">今すぐ</button>
           </div>
           <button onclick="saveStool()" class="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold">便を保存</button>
-        </div>
-
-        <!-- Meal Form -->
-        <div id="meal-form" class="bg-white rounded-2xl shadow-sm p-4">
-          <p class="font-semibold text-gray-700 mb-3">🍽️ 食事を記録</p>
-          <p class="text-xs text-gray-500 mb-2">食事の種類</p>
-          <div class="flex gap-2 mb-4">
-            <button onclick="selectMealType('朝食')" data-meal="朝食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">☀️<br>朝食</button>
-            <button onclick="selectMealType('昼食')" data-meal="昼食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">🌤️<br>昼食</button>
-            <button onclick="selectMealType('夕食')" data-meal="夕食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">🌙<br>夕食</button>
-            <button onclick="selectMealType('間食')" data-meal="間食" class="meal-type-btn flex-1 py-2 rounded-xl border-2 border-gray-200 text-sm">🍪<br>間食</button>
-          </div>
-
-          <!-- AI Photo Analysis -->
-          <div class="mb-4 p-3 bg-purple-50 rounded-xl border border-purple-200">
-            <div class="flex items-center gap-2 mb-1">
-              <p class="text-xs font-bold text-purple-700">📸 AI写真分析（Gemini Vision）</p>
-              <span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">無料</span>
-            </div>
-            <p class="text-xs text-purple-600 mb-2">料理の写真を撮るとAIが食材を認識しFODMAPを自動判定します</p>
-            <input type="file" id="photo-input" accept="image/*" capture="environment"
-              onchange="analyzePhoto(this)" class="hidden">
-            <button onclick="document.getElementById('photo-input').click()"
-              class="w-full py-2 text-sm bg-purple-500 text-white rounded-xl font-medium mb-2">📷 写真を撮る / 選ぶ</button>
-            <div id="photo-preview-area" class="hidden">
-              <img id="photo-preview-img" src="" class="photo-preview-img mb-2">
-              <div id="ai-analysis-result" class="text-xs text-purple-700 bg-purple-50 rounded-lg p-2"></div>
-            </div>
-            <div id="ai-loading" class="hidden text-center py-2">
-              <span class="text-xs text-purple-600">🤖 AIが解析中...</span>
-            </div>
-            <p class="text-xs text-gray-400 mt-1">※Gemini APIキーが必要です。ファミリータブで設定できます（無料）。</p>
-          </div>
-
-          <!-- よく食べるセット -->
-          <div class="mb-3">
-            <div class="flex items-center justify-between mb-1">
-              <p class="text-xs text-gray-500">よく食べるセット</p>
-              <button onclick="savePreset()" class="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-lg">+ 現在を保存</button>
-            </div>
-            <div id="preset-chips" class="flex flex-wrap gap-1 min-h-6"></div>
-          </div>
-          <p class="text-xs text-gray-500 mb-1">食べたもの</p>
-          <textarea id="meal-foods" rows="3" placeholder="例：ご飯、味噌汁、豆腐、バナナ（AIが自動入力することもあります）"
-            oninput="updateFodmapPreview()"
-            class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-emerald-400 mb-2"></textarea>
-
-          <!-- FODMAP Preview -->
-          <div id="fodmap-preview" class="hidden mb-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <p class="text-xs font-semibold text-gray-600 mb-2">⚡ FODMAPチェック結果</p>
-            <div id="fodmap-preview-content"></div>
-          </div>
-
-          <textarea id="meal-notes" rows="2" placeholder="食後の体調など（任意）"
-            class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-emerald-400 mb-3"></textarea>
-          <p class="text-xs text-gray-500 mb-1">記録時刻</p>
-          <div class="flex gap-2 mb-3">
-            <input type="time" id="meal-time"
-              class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
-            <button onclick="setNow('meal-time')"
-              class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-medium whitespace-nowrap">今すぐ</button>
-          </div>
-          <button onclick="saveMeal()" class="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold">食事を保存</button>
         </div>
       </div>
     </div>
@@ -528,6 +529,18 @@
 
 <!-- TOAST -->
 <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-full shadow-lg z-300 opacity-0 transition-opacity duration-300 pointer-events-none">保存しました</div>
+
+<!-- 食事確認モーダル -->
+<div id="meal-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center">
+  <div class="bg-white rounded-t-2xl w-full max-w-md p-5 pb-8">
+    <p class="font-bold text-gray-700 mb-2">🍽️ この内容で登録しますか？</p>
+    <div id="meal-confirm-content" class="bg-gray-50 rounded-xl p-3 text-sm text-gray-600 mb-4"></div>
+    <div class="flex gap-3">
+      <button onclick="closeMealConfirm()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-medium">キャンセル</button>
+      <button onclick="confirmSaveMeal()" class="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold">登録する</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // =========================================================
@@ -904,8 +917,8 @@ const FODMAP_DB = [
 // =========================================================
 let state = {
   userId: null, userName: null, userRole: null, familyCode: null,
-  selectedRole: null, selectedPain: null, selectedMealType: null,
-  selectedStoolType: null, selectedStoolPain: null,
+  selectedRole: null, selectedMealType: null,
+  selectedStoolType: null,
   todaySym: [], todayMeal: [], todayStool: [],
   allMembers: {},
   geminiApiKey: localStorage.getItem('ibs_gemini_api_key') || '',
@@ -952,6 +965,9 @@ function showMain() {
     document.getElementById('api-key-status').className = 'mt-2 text-xs text-center rounded-xl py-1 text-emerald-600 bg-emerald-50';
     document.getElementById('api-key-status').classList.remove('hidden');
     document.getElementById('gemini-api-key-input').value = '••••••••••••';
+    // 起動時にビジョン対応チェック
+    const provider = state.aiProvider || detectApiProvider(state.geminiApiKey);
+    if (provider === 'openrouter') checkVisionSupport(state.geminiApiKey);
   }
 }
 
@@ -1056,6 +1072,42 @@ function saveApiKey() {
   document.getElementById('gemini-api-key-input').value = '••••••••••••';
 }
 
+// 写真ボタンの有効/無効を切り替え
+function updatePhotoBtn(enabled) {
+  const btn = document.getElementById('photo-btn');
+  const desc = document.getElementById('ai-photo-desc');
+  const badge = document.getElementById('ai-photo-badge');
+  if (!btn) return;
+  if (enabled) {
+    btn.disabled = false;
+    btn.className = 'w-full py-2 text-sm bg-purple-500 text-white rounded-xl font-medium mb-2';
+    btn.onclick = () => document.getElementById('photo-input').click();
+    if (desc) desc.textContent = '料理の写真を撮るとAIが食材を認識しFODMAPを自動判定します';
+    if (badge) { badge.textContent = '無料'; badge.className = 'text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full'; }
+  } else {
+    btn.disabled = true;
+    btn.className = 'w-full py-2 text-sm bg-gray-300 text-gray-500 rounded-xl font-medium mb-2 cursor-not-allowed';
+    btn.onclick = null;
+    if (desc) desc.textContent = '現在、無料の画像対応AIが利用できません。食材を直接入力してください。';
+    if (badge) { badge.textContent = '現在利用不可'; badge.className = 'text-xs bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full'; }
+  }
+}
+
+// OpenRouterで無料ビジョンモデルがあるか確認
+async function checkVisionSupport(apiKey) {
+  try {
+    const r = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    });
+    const d = await r.json();
+    const hasVision = (d.data || []).some(m =>
+      m.pricing && String(m.pricing.prompt) === '0' && String(m.pricing.completion) === '0' &&
+      m.architecture && (m.architecture.input_modalities || []).includes('image')
+    );
+    updatePhotoBtn(hasVision);
+  } catch(e) { updatePhotoBtn(false); }
+}
+
 // APIキーの種類を判定
 function detectApiProvider(key) {
   if (key.startsWith('sk-or-')) return 'openrouter';
@@ -1134,6 +1186,8 @@ async function testApiConnection() {
           state.aiProvider = 'openrouter';
           localStorage.setItem('ibs_gemini_model', model);
           localStorage.setItem('ibs_ai_provider', 'openrouter');
+          // ビジョンモデルの有無を確認してボタン更新
+          checkVisionSupport(activeKey);
           statusEl.textContent = `✅ 接続成功！${shortName.split(':')[0]}`;
           statusEl.className = 'mt-2 text-xs text-center rounded-xl py-1 text-emerald-600 bg-emerald-50';
           if (key && key !== '••••••••••••') {
@@ -1202,43 +1256,6 @@ function openTab(name) {
   if (name === 'history') renderHistory();
   if (name === 'family') loadMembers();
   if (name === 'record') loadPresets();
-}
-
-// =========================================================
-// SYMPTOM FORM
-// =========================================================
-function selectPain(level) {
-  state.selectedPain = level;
-  document.querySelectorAll('.pain-btn').forEach(b => b.classList.remove('selected'));
-  document.querySelector(`[data-pain="${level}"]`).classList.add('selected');
-}
-
-function toggleChip(el, group) {
-  el.classList.toggle('selected');
-}
-
-async function saveSymptom() {
-  if (state.selectedPain === null) { alert('腹痛レベルを選択してください'); return; }
-  const symptoms = {};
-  document.querySelectorAll('#symptom-form .symptom-chip.selected').forEach(c => {
-    symptoms[c.textContent.trim()] = true;
-  });
-  const time = getRecordedTime('symptom-time');
-  const record = {
-    date: todayStr(), time, painLevel: state.selectedPain,
-    symptoms, notes: document.getElementById('symptom-notes').value.trim(),
-    createdAt: new Date().toISOString(), type: 'symptom'
-  };
-  try {
-    await db.ref(`families/${state.familyCode}/records/${state.userId}/symptoms`).push(record);
-    // Reset
-    state.selectedPain = null;
-    document.querySelectorAll('#symptom-form .pain-btn').forEach(b => b.classList.remove('selected'));
-    document.querySelectorAll('#symptom-form .symptom-chip').forEach(c => c.classList.remove('selected'));
-    document.getElementById('symptom-notes').value = '';
-    document.getElementById('symptom-time').value = '';
-    showToast('症状を記録しました'); loadTodayData();
-  } catch(e) { alert('保存失敗: ' + e.message); }
 }
 
 // =========================================================
@@ -1401,10 +1418,40 @@ function updateFodmapPreview() {
   content.innerHTML = html;
 }
 
-async function saveMeal() {
-  if (!state.selectedMealType) { alert('食事の種類を選択してください'); return; }
+function saveMeal() {
+  if (!state.selectedMealType) {
+    showMealError('食事の種類（朝食・昼食・夕食・間食）を選択してください');
+    return;
+  }
   const foods = document.getElementById('meal-foods').value.trim();
-  if (!foods) { alert('食べたものを入力してください'); return; }
+  if (!foods) {
+    showMealError('食べたものを入力してください\n例：ご飯、味噌汁、豆腐、バナナ');
+    return;
+  }
+  // 確認モーダルを表示
+  const mealIcon = {'朝食':'☀️','昼食':'🌤️','夕食':'🌙','間食':'🍪'};
+  const { high } = checkFodmapDetailed(foods);
+  const fodmapNote = high.length > 0 ? `\n⚠️ 高FODMAP: ${high.map(f=>f.name).join('、')}` : '\n✅ 高FODMAPなし';
+  document.getElementById('meal-confirm-content').innerHTML =
+    `<p><span class="font-medium">${mealIcon[state.selectedMealType]||''} ${state.selectedMealType}</span></p>
+     <p class="mt-1">🍴 ${foods}</p>
+     <p class="mt-1 text-xs ${high.length>0?'text-red-500':'text-green-600'}">${high.length>0?'⚠️ 高FODMAP: '+high.map(f=>f.name).join('、'):'✅ 高FODMAPなし'}</p>`;
+  document.getElementById('meal-confirm-modal').classList.remove('hidden');
+}
+
+function showMealError(msg) {
+  const el = document.getElementById('meal-error-msg');
+  if (el) { el.textContent = msg; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'), 3000); }
+  else { alert(msg); }
+}
+
+function closeMealConfirm() {
+  document.getElementById('meal-confirm-modal').classList.add('hidden');
+}
+
+async function confirmSaveMeal() {
+  closeMealConfirm();
+  const foods = document.getElementById('meal-foods').value.trim();
   const { high, medium } = checkFodmapDetailed(foods);
   const time = getRecordedTime('meal-time');
   const record = {
@@ -1423,7 +1470,7 @@ async function saveMeal() {
     document.getElementById('meal-time').value = '';
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
-    showToast('食事を記録しました'); loadTodayData();
+    showToast('食事を記録しました ✅'); loadTodayData();
   } catch(e) { alert('保存失敗: ' + e.message); }
 }
 
@@ -1452,30 +1499,101 @@ async function analyzePhoto(input) {
 
     const prompt = 'この食事の写真を見て、含まれている食材・料理をすべて日本語で列挙してください。その後、Monash大学のFODMAPガイドラインに基づいて各食材が高FODMAP・中FODMAP・低FODMAPのどれに当たるか簡潔に示してください。最後に「食材リスト:」の見出しの後に食材名をカンマ区切りで書いてください（フォームへの自動入力用）。';
     const provider = state.aiProvider || localStorage.getItem('ibs_ai_provider') || detectApiProvider(apiKey);
-    const model = state.geminiModel || localStorage.getItem('ibs_gemini_model') || (provider === 'openrouter' ? 'meta-llama/llama-3.1-8b-instruct:free' : 'gemini-1.5-flash');
 
     try {
       let response;
       if (provider === 'openrouter') {
-        response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': 'https://ibs-care-app.vercel.app',
-            'X-Title': 'IBS Care App'
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
-                { type: 'text', text: prompt }
-              ]
-            }]
-          })
-        });
+        // OpenRouter APIから画像対応モデルを動的取得
+        document.getElementById('ai-analysis-result').innerHTML = '<p class="text-blue-500 text-xs">🔍 画像対応モデルを検索中...</p>';
+        let VISION_MODELS = [];
+        try {
+          const modelsResp = await fetch('https://openrouter.ai/api/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          });
+          const modelsData = await modelsResp.json();
+          if (modelsData.data) {
+            VISION_MODELS = modelsData.data
+              .filter(m =>
+                m.pricing && String(m.pricing.prompt) === '0' &&
+                String(m.pricing.completion) === '0' &&
+                m.architecture && m.architecture.input_modalities &&
+                m.architecture.input_modalities.includes('image')
+              )
+              .map(m => m.id)
+              .slice(0, 5);
+          }
+        } catch(e) { /* フォールバック */ }
+        // 動的取得失敗時のフォールバック（既知の食材分析対応モデル）
+        if (VISION_MODELS.length === 0) {
+          VISION_MODELS = [
+            'qwen/qwen2.5-vl-7b-instruct:free',
+            'meta-llama/llama-3.2-11b-vision-instruct:free',
+          ];
+        }
+        // 食材分析に不向きなモデルを除外（音楽生成系など）
+        const BLOCKED_MODELS = ['music', 'audio', 'sound', 'tts', 'speech'];
+        VISION_MODELS = VISION_MODELS.filter(id =>
+          !BLOCKED_MODELS.some(kw => id.toLowerCase().includes(kw))
+        );
+        document.getElementById('ai-analysis-result').innerHTML = '';
+        // ビジョン対応モデルを順番に試す
+        let lastErr = '';
+        for (const vmodel of VISION_MODELS) {
+          try {
+            const vresp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': 'https://ibs-care-app.vercel.app',
+                'X-Title': 'IBS Care App'
+              },
+              body: JSON.stringify({
+                model: vmodel,
+                messages: [{
+                  role: 'user',
+                  content: [
+                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+                    { type: 'text', text: prompt }
+                  ]
+                }]
+              })
+            });
+            const vdata = await vresp.json();
+            if (vdata.choices && vdata.choices[0]) {
+              const text = vdata.choices[0].message.content;
+              // レスポンスバリデーション: 音楽メタデータや無関係な応答を弾く
+              const isInvalid =
+                text.includes('bpm') || text.includes('duration_secs') ||
+                text.includes('J-Pop') || text.includes('mosic') ||
+                text.includes('music') || text.includes('さようなら') ||
+                (text.length < 20) ||
+                (!text.includes('食材') && !text.includes('FODMAP') &&
+                 !text.includes('料理') && !text.includes('食べ') &&
+                 !text.includes('野菜') && !text.includes('肉') &&
+                 !text.includes('魚') && !text.includes('ご飯') &&
+                 !text.includes('麺') && !text.includes('パン'));
+              if (isInvalid) {
+                lastErr = `${vmodel}: 食材分析に対応していないモデルです`;
+                continue;
+              }
+              document.getElementById('ai-loading').classList.add('hidden');
+              document.getElementById('ai-analysis-result').innerHTML =
+                '<p class="font-bold mb-1">🤖 AI分析結果:</p>' + text.replace(/\n/g,'<br>');
+              const match = text.match(/食材リスト[:：]\s*(.+)/);
+              if (match) { document.getElementById('meal-foods').value = match[1].trim(); updateFodmapPreview(); }
+              return;
+            } else if (vdata.error) {
+              lastErr = vdata.error.message;
+            }
+          } catch(e) { lastErr = e.message; }
+        }
+        document.getElementById('ai-loading').classList.add('hidden');
+        document.getElementById('ai-analysis-result').innerHTML =
+          `<p class="text-orange-500 font-bold">📷 AI写真分析は現在利用できません</p>
+           <p class="text-xs text-gray-500 mt-1">無料の画像対応モデルが現在すべて停止中です。<br>食材を下の「食べたもの」欄に直接入力してください。</p>`;
+        return;
+        response = null;
       } else {
         response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -1992,9 +2110,9 @@ function renderStats() {
   document.getElementById('stat-avg-grade').textContent = avgScore !== null ? `グレード ${scoreGrade(avgScore)}` : '記録なし';
   document.getElementById('stat-record-days').textContent = recordDays;
 
-  // Top symptoms (7 days)
+  // Top symptoms (7 days) — 便の症状チップから集計
   const symCount = {};
-  symptoms.filter(r=>days7.includes(r.date)).forEach(r => {
+  stools.filter(r=>days7.includes(r.date)).forEach(r => {
     if (r.symptoms) Object.keys(r.symptoms).forEach(s => { symCount[s] = (symCount[s]||0)+1; });
   });
   const topSyms = Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
