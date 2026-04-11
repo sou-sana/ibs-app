@@ -956,6 +956,7 @@ function showMain() {
   showScreen('screen-main');
   updateHeader();
   loadTodayData();
+  setupRealtimeListeners();
   if (state.userRole === 'parent') {
     document.getElementById('children-records').classList.remove('hidden');
   }
@@ -1253,6 +1254,7 @@ function openTab(name) {
   });
   const nb = document.getElementById('nav-' + name);
   if (nb) { nb.classList.remove('text-gray-400'); nb.classList.add('text-emerald-600','font-medium'); }
+  if (name === 'home') loadTodayData();
   if (name === 'history') renderHistory();
   if (name === 'family') loadMembers();
   if (name === 'record') loadPresets();
@@ -1748,8 +1750,43 @@ function generateAdvice(symRecs, mealRecs, stoolRecs) {
 }
 
 // =========================================================
-// LOAD TODAY DATA
+// LOAD TODAY DATA + REALTIME LISTENERS
 // =========================================================
+let _realtimeListenersActive = false;
+
+function renderHomeFromState() {
+  const score = calcScore(state.todaySym, state.todayMeal, state.todayStool);
+  updateScoreUI(score, state.todaySym, state.todayMeal, state.todayStool);
+  document.getElementById('advice-text').textContent = generateAdvice(state.todaySym, state.todayMeal, state.todayStool);
+  renderMealSlots(state.todayMeal);
+  renderTodaySymptoms(state.todaySym, state.todayStool);
+  renderTodayStool(state.todayStool);
+}
+
+function setupRealtimeListeners() {
+  if (_realtimeListenersActive) return;
+  _realtimeListenersActive = true;
+  const today = todayStr();
+  const uid = state.userId;
+  const fc = state.familyCode;
+
+  db.ref(`families/${fc}/records/${uid}/meals`).orderByChild('date').equalTo(today).on('value', snap => {
+    state.todayMeal = [];
+    if (snap.exists()) snap.forEach(c => state.todayMeal.push({id:c.key,...c.val()}));
+    renderHomeFromState();
+  });
+  db.ref(`families/${fc}/records/${uid}/stools`).orderByChild('date').equalTo(today).on('value', snap => {
+    state.todayStool = [];
+    if (snap.exists()) snap.forEach(c => state.todayStool.push({id:c.key,...c.val()}));
+    renderHomeFromState();
+  });
+  db.ref(`families/${fc}/records/${uid}/symptoms`).orderByChild('date').equalTo(today).on('value', snap => {
+    state.todaySym = [];
+    if (snap.exists()) snap.forEach(c => state.todaySym.push({id:c.key,...c.val()}));
+    renderHomeFromState();
+  });
+}
+
 function loadTodayData() {
   const today = todayStr();
   const uid = state.userId;
@@ -1763,13 +1800,7 @@ function loadTodayData() {
     if (ss.exists()) ss.forEach(c => state.todaySym.push({id:c.key,...c.val()}));
     if (ms.exists()) ms.forEach(c => state.todayMeal.push({id:c.key,...c.val()}));
     if (ts.exists()) ts.forEach(c => state.todayStool.push({id:c.key,...c.val()}));
-
-    const score = calcScore(state.todaySym, state.todayMeal, state.todayStool);
-    updateScoreUI(score, state.todaySym, state.todayMeal, state.todayStool);
-    document.getElementById('advice-text').textContent = generateAdvice(state.todaySym, state.todayMeal, state.todayStool);
-    renderMealSlots(state.todayMeal);
-    renderTodaySymptoms(state.todaySym, state.todayStool);
-    renderTodayStool(state.todayStool);
+    renderHomeFromState();
   });
 }
 
