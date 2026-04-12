@@ -131,6 +131,17 @@
 
     <!-- HOME TAB -->
     <div id="tab-home" class="tab-content active">
+      <!-- 保護者用：閲覧中の子どもバナー（子どもロールには hidden） -->
+      <div id="viewing-child-banner" class="hidden mx-4 mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs text-blue-500 font-medium">記録・閲覧対象</p>
+            <p id="viewing-child-name" class="text-sm font-bold text-blue-700">--</p>
+          </div>
+          <button onclick="openTab('family')" class="text-xs bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-medium">切り替え →</button>
+        </div>
+      </div>
+
       <!-- Score Card -->
       <div class="mx-4 mt-4 bg-white rounded-2xl shadow-sm p-5">
         <div class="flex items-center justify-between mb-1">
@@ -169,7 +180,7 @@
       <div class="mx-4 mt-3 bg-white rounded-2xl shadow-sm p-4">
         <div class="flex items-center justify-between mb-3">
           <p class="text-sm font-semibold text-gray-700">🍽️ 今日の食事</p>
-          <button onclick="openTab('record')" class="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-lg">+ 追加</button>
+          <button id="btn-add-meal" onclick="openTab('record')" class="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-lg">+ 追加</button>
         </div>
         <div id="meal-slots-container" class="space-y-2"></div>
       </div>
@@ -178,7 +189,7 @@
       <div class="mx-4 mt-3 bg-white rounded-2xl shadow-sm p-4">
         <p class="text-sm font-semibold text-gray-700 mb-2">🚽 今日の便</p>
         <div id="today-stool-summary"><p class="text-sm text-gray-400 text-center py-2">記録なし</p></div>
-        <button onclick="openTab('record'); setTimeout(()=>document.getElementById('stool-form').scrollIntoView({behavior:'smooth'}),100)"
+        <button id="btn-add-stool" onclick="openTab('record'); setTimeout(()=>document.getElementById('stool-form').scrollIntoView({behavior:'smooth'}),100)"
           class="mt-2 w-full py-2 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl">+ 便を記録</button>
       </div>
 
@@ -186,7 +197,7 @@
       <div class="mx-4 mt-3 mb-4 bg-white rounded-2xl shadow-sm p-4">
         <p class="text-sm font-semibold text-gray-700 mb-2">🩺 今日の症状</p>
         <div id="today-symptom-summary"><p class="text-sm text-gray-400 text-center py-2">記録なし</p></div>
-        <button onclick="openTab('record')" class="mt-2 w-full py-2 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl">+ 症状を記録</button>
+        <button id="btn-add-sym" onclick="openTab('record')" class="mt-2 w-full py-2 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl">+ 症状を記録</button>
       </div>
     </div>
 
@@ -998,7 +1009,7 @@ const FODMAP_DB = [
 // STATE
 // =========================================================
 let state = {
-  userId: null, userName: null, userRole: null, familyCode: null,
+  userId: null, userName: null, userRole: null, familyCode: null, viewingUserId: null,
   selectedRole: null, selectedMealType: null,
   selectedStoolType: null,
   todaySym: [], todayMeal: [], todayStool: [],
@@ -1042,6 +1053,7 @@ function showMain() {
   setupRealtimeListeners();
   if (state.userRole === 'parent') {
     document.getElementById('children-records').classList.remove('hidden');
+    // 親も記録可能（子供のデータとして保存）
   }
   document.getElementById('family-code-display').textContent = state.familyCode;
   if (state.geminiApiKey) {
@@ -1448,7 +1460,8 @@ async function saveStool() {
     createdAt: new Date().toISOString(), type: 'stool'
   };
   try {
-    await db.ref(`families/${state.familyCode}/records/${state.userId}/stools`).push(record);
+    const saveUid = state.viewingUserId || state.userId;
+    await db.ref(`families/${state.familyCode}/records/${saveUid}/stools`).push(record);
     state.selectedStoolType = null;
     document.querySelectorAll('#stool-form .stool-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.stool-sym-btn').forEach(b => b.classList.remove('selected'));
@@ -1559,7 +1572,8 @@ async function confirmSaveMeal() {
     createdAt: new Date().toISOString(), type: 'meal'
   };
   try {
-    await db.ref(`families/${state.familyCode}/records/${state.userId}/meals`).push(record);
+    const saveUid = state.viewingUserId || state.userId;
+    await db.ref(`families/${state.familyCode}/records/${saveUid}/meals`).push(record);
     state.selectedMealType = null;
     document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('meal-foods').value = '';
@@ -1862,7 +1876,7 @@ function setupRealtimeListeners() {
   if (_realtimeListenersActive) return;
   _realtimeListenersActive = true;
   const today = todayStr();
-  const uid = state.userId;
+  const uid = state.viewingUserId || state.userId;
   const fc = state.familyCode;
 
   db.ref(`families/${fc}/records/${uid}/meals`).orderByChild('date').equalTo(today).on('value', snap => {
@@ -1884,7 +1898,7 @@ function setupRealtimeListeners() {
 
 function loadTodayData() {
   const today = todayStr();
-  const uid = state.userId;
+  const uid = state.viewingUserId || state.userId;
   const fc = state.familyCode;
   Promise.all([
     db.ref(`families/${fc}/records/${uid}/symptoms`).orderByChild('date').equalTo(today).get(),
@@ -2631,6 +2645,23 @@ function loadMembers() {
   });
 }
 
+// 保護者が閲覧する子どもを切り替える
+function setViewingChild(uid, name) {
+  state.viewingUserId = uid;
+  // バナー表示
+  var banner = document.getElementById('viewing-child-banner');
+  var nameEl = document.getElementById('viewing-child-name');
+  if (banner) banner.classList.remove('hidden');
+  if (nameEl) nameEl.textContent = name + ' さんの記録';
+  // リアルタイムリスナーをリセットして新しい子どものデータで再起動
+  _realtimeListenersActive = false;
+  state.todaySym = []; state.todayMeal = []; state.todayStool = [];
+  loadTodayData();
+  setupRealtimeListeners();
+  // ホームに移動して記録を表示
+  openTab('home');
+}
+
 function loadChildrenRecords(membersSnap) {
   const container = document.getElementById('children-records-list');
   container.innerHTML = '';
@@ -2653,14 +2684,21 @@ function loadChildrenRecords(membersSnap) {
       const latestStool = tr.length>0 ? tr.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0] : null;
       const div = document.createElement('div');
       div.className = 'bg-white rounded-2xl shadow-sm p-4';
+      div.style.cursor = 'pointer';
       div.innerHTML = `
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2"><span class="text-2xl">👦</span><p class="font-semibold text-gray-700">${escHtml(child.userName)}</p></div>
           <div class="flex items-center gap-1"><span class="text-2xl font-bold text-emerald-600">${score}</span><span class="text-white text-xs font-bold px-2 py-0.5 rounded-full grade-${grade}">${grade}</span></div>
         </div>
-        <p class="text-xs text-gray-500">症状:${sr.length}件 食事:${mr.length}件 便:${tr.length}件</p>
-        ${latestStool?`<p class="text-xs mt-1 ${latestStool.bristolType<=2||latestStool.bristolType>=6?'text-red-500':'text-gray-500'}">${BRISTOL_LABELS[latestStool.bristolType]}</p>`:''}
+        <p class="text-xs text-gray-500 mb-2">症状:${sr.length}件 食事:${mr.length}件 便:${tr.length}件</p>
+        ${latestStool?`<p class="text-xs mb-2 ${latestStool.bristolType<=2||latestStool.bristolType>=6?'text-red-500':'text-gray-500'}">${BRISTOL_LABELS[latestStool.bristolType]}</p>`:''}
+        <button onclick="setViewingChild('${child.userId}','${escHtml(child.userName)}')"
+          class="w-full py-2 text-xs font-bold bg-emerald-500 text-white rounded-xl">
+          📊 ${escHtml(child.userName)}さんの記録をホームで確認
+        </button>
       `;
+      // 初回ロード時に1人目の子供を自動設定
+      if (!state.viewingUserId) setViewingChild(child.userId, child.userName);
       container.appendChild(div);
     });
   });
