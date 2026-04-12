@@ -544,47 +544,52 @@
 
 <!-- カスタムFODMAP追加モーダル -->
 <div id="custom-fodmap-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center">
-  <div class="bg-white rounded-t-2xl w-full max-w-md p-5 pb-8">
-    <div class="flex items-center justify-between mb-4">
+  <div class="bg-white rounded-t-2xl w-full max-w-md flex flex-col" style="max-height:90vh">
+    <!-- 固定ヘッダー -->
+    <div class="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
       <p class="font-bold text-gray-700">🥦 FODMAP食品を追加</p>
       <button onclick="closeCustomFodmapModal()" class="text-gray-400 text-xl">✕</button>
     </div>
-    <div class="space-y-3">
-      <div>
-        <p class="text-xs text-gray-500 mb-1">食品名 <span class="text-red-400">*</span></p>
-        <input id="cf-name" type="text" placeholder="例：キヌア、チアシード" maxlength="30"
-          class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
-      </div>
-      <div>
-        <p class="text-xs text-gray-500 mb-1">FODMAPレベル <span class="text-red-400">*</span></p>
-        <div class="flex gap-2">
-          <button onclick="setCfLevel('high')" id="cf-high" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-red-300 text-red-600">⚠️ 高</button>
-          <button onclick="setCfLevel('medium')" id="cf-medium" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-orange-300 text-orange-600">⚡ 中</button>
-          <button onclick="setCfLevel('low')" id="cf-low" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-green-300 text-green-600">✅ 低</button>
+    <!-- スクロール可能なフォーム部分 -->
+    <div class="overflow-y-auto px-5 flex-1">
+      <div class="space-y-3 pb-2">
+        <div>
+          <p class="text-xs text-gray-500 mb-1">食品名 <span class="text-red-400">*</span></p>
+          <input id="cf-name" type="text" placeholder="例：キヌア、チアシード" maxlength="30"
+            class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 mb-1">FODMAPレベル <span class="text-red-400">*</span></p>
+          <div class="flex gap-2">
+            <button onclick="setCfLevel('high')" id="cf-high" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-red-300 text-red-600">⚠️ 高</button>
+            <button onclick="setCfLevel('medium')" id="cf-medium" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-orange-300 text-orange-600">⚡ 中</button>
+            <button onclick="setCfLevel('low')" id="cf-low" class="cf-level-btn flex-1 py-2 text-xs font-bold rounded-xl border-2 border-green-300 text-green-600">✅ 低</button>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 mb-1">カテゴリ</p>
+          <select id="cf-category" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
+            <option value="その他加工食品">その他・不明</option>
+            <option value="野菜">野菜</option>
+            <option value="果物">果物</option>
+            <option value="穀物・パン">穀物・パン</option>
+            <option value="肉・魚・卵">肉・魚・卵</option>
+            <option value="乳製品">乳製品</option>
+            <option value="豆類・大豆">豆類・大豆</option>
+            <option value="調味料・甘味料">調味料・甘味料</option>
+            <option value="飲み物">飲み物</option>
+            <option value="きのこ">きのこ</option>
+          </select>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 mb-1">メモ（根拠・出典など）</p>
+          <input id="cf-note" type="text" placeholder="例：〇〇サイト調べ、少量なら可" maxlength="60"
+            class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
         </div>
       </div>
-      <div>
-        <p class="text-xs text-gray-500 mb-1">カテゴリ</p>
-        <select id="cf-category" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
-          <option value="その他加工食品">その他・不明</option>
-          <option value="野菜">野菜</option>
-          <option value="果物">果物</option>
-          <option value="穀物・パン">穀物・パン</option>
-          <option value="肉・魚・卵">肉・魚・卵</option>
-          <option value="乳製品">乳製品</option>
-          <option value="豆類・大豆">豆類・大豆</option>
-          <option value="調味料・甘味料">調味料・甘味料</option>
-          <option value="飲み物">飲み物</option>
-          <option value="きのこ">きのこ</option>
-        </select>
-      </div>
-      <div>
-        <p class="text-xs text-gray-500 mb-1">メモ（根拠・出典など）</p>
-        <input id="cf-note" type="text" placeholder="例：〇〇サイト調べ、少量なら可" maxlength="60"
-          class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
-      </div>
     </div>
-    <div class="flex gap-3 mt-4">
+    <!-- 固定フッター（ボタン） -->
+    <div class="flex gap-3 px-5 py-4 flex-shrink-0 border-t border-gray-100">
       <button onclick="closeCustomFodmapModal()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-medium">キャンセル</button>
       <button onclick="saveCustomFodmap()" class="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold">追加する</button>
     </div>
