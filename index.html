@@ -1340,7 +1340,7 @@ async function testApiConnection() {
 // =========================================================
 // TABS
 // =========================================================
-function openTab(name) {
+function openTab(name, skipReload) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => {
@@ -1349,7 +1349,8 @@ function openTab(name) {
   });
   const nb = document.getElementById('nav-' + name);
   if (nb) { nb.classList.remove('text-gray-400'); nb.classList.add('text-emerald-600','font-medium'); }
-  if (name === 'home') loadTodayData();
+  // skipReload=true: リアルタイムリスナーに任せる（保存直後のレース回避）
+  if (name === 'home' && !skipReload) loadTodayData();
   if (name === 'history') renderHistory();
   if (name === 'family') loadMembers();
   if (name === 'record') loadPresets();
@@ -1468,7 +1469,7 @@ async function saveStool() {
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
     showToast('便を記録しました');
-    openTab('home');
+    openTab('home', true);
   } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
@@ -1586,7 +1587,7 @@ async function confirmSaveMeal() {
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
     showToast('食事を記録しました ✅');
-    openTab('home');
+    openTab('home', true);
   } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
