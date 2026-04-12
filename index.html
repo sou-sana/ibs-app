@@ -548,7 +548,7 @@
     overflow:hidden → flex子要素がmax-heightで確実にクリップされる（スクロール高さ計算の基準になる）
     display:flex + flex-direction:column → ヘッダー・スクロールエリア・フッターを縦並び
   -->
-  <div class="bg-white rounded-t-2xl w-full max-w-md"
+  <div id="cf-modal-card" class="bg-white rounded-t-2xl w-full max-w-md"
        style="max-height:88vh; display:flex; flex-direction:column; overflow:hidden;">
 
     <!-- 固定ヘッダー（shrinkしない） -->
@@ -2453,10 +2453,56 @@ function openCustomFodmapModal() {
   });
   document.getElementById('custom-fodmap-modal').classList.remove('hidden');
   setTimeout(() => { document.getElementById('cf-scroll-area').scrollTop = 0; }, 10);
+
+  // キーボード出現時にモーダル高さを動的調整 (Android / iOS 共通)
+  function _cfResizeCard() {
+    const card = document.getElementById('cf-modal-card');
+    if (!card) return;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    card.style.maxHeight = Math.floor(vh * 0.95) + 'px';
+  }
+  _cfResizeCard();
+  window._cfResizeCard = _cfResizeCard;
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', _cfResizeCard);
+    window.visualViewport.addEventListener('scroll', _cfResizeCard);
+  } else {
+    window.addEventListener('resize', _cfResizeCard);
+  }
+
+  // フォーカス時に入力欄をモーダル内でスクロールして表示
+  document.querySelectorAll('#cf-scroll-area input, #cf-scroll-area select').forEach(function(el) {
+    if (!el._cfFocusHandler) {
+      el._cfFocusHandler = function() {
+        var self = this;
+        setTimeout(function() {
+          self.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 350);
+      };
+      el.addEventListener('focus', el._cfFocusHandler);
+    }
+  });
 }
 
 function closeCustomFodmapModal() {
   document.getElementById('custom-fodmap-modal').classList.add('hidden');
+  if (window._cfResizeCard) {
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', window._cfResizeCard);
+      window.visualViewport.removeEventListener('scroll', window._cfResizeCard);
+    } else {
+      window.removeEventListener('resize', window._cfResizeCard);
+    }
+    window._cfResizeCard = null;
+  }
+  var card = document.getElementById('cf-modal-card');
+  if (card) card.style.maxHeight = '';
+  document.querySelectorAll('#cf-scroll-area input, #cf-scroll-area select').forEach(function(el) {
+    if (el._cfFocusHandler) {
+      el.removeEventListener('focus', el._cfFocusHandler);
+      el._cfFocusHandler = null;
+    }
+  });
 }
 
 function setCfLevel(level) {
