@@ -543,13 +543,10 @@
 <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-full shadow-lg z-300 opacity-0 transition-opacity duration-300 pointer-events-none">保存しました</div>
 
 <!-- カスタムFODMAP追加モーダル -->
-<div id="custom-fodmap-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center">
-  <!--
-    overflow:hidden → flex子要素がmax-heightで確実にクリップされる（スクロール高さ計算の基準になる）
-    display:flex + flex-direction:column → ヘッダー・スクロールエリア・フッターを縦並び
-  -->
+<!-- z-index:300 をインラインで指定（Tailwind の z-200 は存在しないため底辺ナビバー z-index:100 を確実に上回る） -->
+<div id="custom-fodmap-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-end justify-center" style="z-index:300;">
   <div id="cf-modal-card" class="bg-white rounded-t-2xl w-full max-w-md"
-       style="max-height:88vh; display:flex; flex-direction:column; overflow:hidden;">
+       style="max-height:88vh; display:flex; flex-direction:column; overflow:hidden; margin-bottom:0;">
 
     <!-- 固定ヘッダー（shrinkしない） -->
     <div style="flex-shrink:0; padding:20px 20px 12px;">
@@ -616,7 +613,7 @@
 </div>
 
 <!-- 食事確認モーダル -->
-<div id="meal-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center">
+<div id="meal-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-end justify-center" style="z-index:300;">
   <div class="bg-white rounded-t-2xl w-full max-w-md p-5 pb-8">
     <p class="font-bold text-gray-700 mb-2">🍽️ この内容で登録しますか？</p>
     <div id="meal-confirm-content" class="bg-gray-50 rounded-xl p-3 text-sm text-gray-600 mb-4"></div>
@@ -2515,8 +2512,13 @@ function setCfLevel(level) {
 
 async function saveCustomFodmap() {
   const name = document.getElementById('cf-name').value.trim();
-  if (!name) { alert('食品名を入力してください'); return; }
-  if (!_cfLevel) { alert('FODMAPレベルを選択してください'); return; }
+  if (!name) { showToast('⚠️ 食品名を入力してください'); return; }
+  if (!_cfLevel) { showToast('⚠️ FODMAPレベルを選択してください'); return; }
+  if (!state.familyCode || !state.userId) {
+    showToast('⚠️ ログイン状態を確認してください');
+    console.error('saveCustomFodmap: familyCode=', state.familyCode, 'userId=', state.userId);
+    return;
+  }
   const entry = {
     name,
     level: _cfLevel,
@@ -2526,12 +2528,19 @@ async function saveCustomFodmap() {
     createdBy: state.userId,
     createdAt: new Date().toISOString()
   };
+  const btn = document.querySelector('#custom-fodmap-modal button[onclick="saveCustomFodmap()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
   try {
     await db.ref(`families/${state.familyCode}/customFodmap`).push(entry);
     closeCustomFodmapModal();
     showToast(`「${name}」を追加しました ✅`);
     await loadCustomFodmap();
-  } catch(e) { alert('保存失敗: ' + e.message); }
+  } catch(e) {
+    console.error('saveCustomFodmap error:', e);
+    showToast('❌ 保存失敗: ' + (e.message || e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '追加する'; }
+  }
 }
 
 async function loadCustomFodmap() {
