@@ -543,16 +543,16 @@
 <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-full shadow-lg z-300 opacity-0 transition-opacity duration-300 pointer-events-none">保存しました</div>
 
 <!-- カスタムFODMAP追加モーダル -->
-<div id="custom-fodmap-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center" ontouchstart="event.stopPropagation()">
-  <div class="bg-white rounded-t-2xl w-full max-w-md flex flex-col" style="max-height:90vh">
+<div id="custom-fodmap-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-200 flex items-end justify-center">
+  <div class="bg-white rounded-t-2xl w-full max-w-md flex flex-col" style="max-height:88vh; height:auto;">
     <!-- 固定ヘッダー -->
     <div class="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
       <p class="font-bold text-gray-700">🥦 FODMAP食品を追加</p>
-      <button onclick="closeCustomFodmapModal()" class="text-gray-400 text-xl">✕</button>
+      <button onclick="closeCustomFodmapModal()" class="text-gray-400 text-xl leading-none">✕</button>
     </div>
     <!-- スクロール可能なフォーム部分 -->
-    <div id="cf-scroll-area" class="overflow-y-auto px-5 flex-1" style="-webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
-      <div class="space-y-3 pb-2">
+    <div id="cf-scroll-area" class="px-5 flex-1" style="overflow-y:scroll; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; min-height:0;">
+      <div class="space-y-3 pb-4 pt-1">
         <div>
           <p class="text-xs text-gray-500 mb-1">食品名 <span class="text-red-400">*</span></p>
           <input id="cf-name" type="text" placeholder="例：キヌア、チアシード" maxlength="30"
@@ -589,7 +589,7 @@
       </div>
     </div>
     <!-- 固定フッター（ボタン） -->
-    <div class="flex gap-3 px-5 py-4 flex-shrink-0 border-t border-gray-100">
+    <div class="flex gap-3 px-5 py-4 flex-shrink-0 border-t border-gray-100 bg-white">
       <button onclick="closeCustomFodmapModal()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-medium">キャンセル</button>
       <button onclick="saveCustomFodmap()" class="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold">追加する</button>
     </div>
@@ -2430,42 +2430,52 @@ function openCustomFodmapModal() {
   document.getElementById('cf-note').value = '';
   document.getElementById('cf-category').value = 'その他加工食品';
   ['high','medium','low'].forEach(l => {
-    const btn = document.getElementById('cf-' + l);
-    btn.classList.remove('ring-2','ring-offset-1');
+    document.getElementById('cf-' + l).classList.remove('ring-2','ring-offset-1');
   });
-  document.getElementById('custom-fodmap-modal').classList.remove('hidden');
-  // bodyスクロール固定（モーダル背景が動かないように）
-  document.body.style.overflow = 'hidden';
-  document.body.style.position = 'fixed';
-  document.body.style.width = '100%';
-  // スクロールエリアのtouchmoveが親に伝播しないようにする
+
+  const modal = document.getElementById('custom-fodmap-modal');
   const scrollArea = document.getElementById('cf-scroll-area');
-  scrollArea._touchStartY = 0;
-  scrollArea.addEventListener('touchstart', function(e) {
-    scrollArea._touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-  scrollArea.addEventListener('touchmove', function(e) {
-    const scrollTop = scrollArea.scrollTop;
-    const scrollHeight = scrollArea.scrollHeight;
-    const clientHeight = scrollArea.clientHeight;
-    const touchY = e.touches[0].clientY;
-    const direction = touchY - scrollArea._touchStartY;
-    const atTop = scrollTop <= 0 && direction > 0;
-    const atBottom = scrollTop + clientHeight >= scrollHeight && direction < 0;
-    if (atTop || atBottom) {
+  modal.classList.remove('hidden');
+  scrollArea.scrollTop = 0;
+
+  // body スクロール停止（position:fixed は使わない — レイアウトがずれるため）
+  document.body.style.overflow = 'hidden';
+
+  // オーバーレイ（暗い背景）のタッチスクロールをブロック
+  if (!modal._preventTouch) {
+    modal._preventTouch = function(e) {
+      // スクロールエリア内部からのイベントは許可（stopPropagation済み）
       e.preventDefault();
-    } else {
+    };
+    modal.addEventListener('touchmove', modal._preventTouch, { passive: false });
+  }
+
+  // スクロールエリア内のタッチは親に伝播させない
+  if (!scrollArea._allowScroll) {
+    scrollArea._allowScroll = function(e) {
       e.stopPropagation();
-    }
-  }, { passive: false });
+    };
+    scrollArea.addEventListener('touchmove', scrollArea._allowScroll, { passive: true });
+  }
 }
 
 function closeCustomFodmapModal() {
-  document.getElementById('custom-fodmap-modal').classList.add('hidden');
-  // bodyスクロール固定解除
+  const modal = document.getElementById('custom-fodmap-modal');
+  const scrollArea = document.getElementById('cf-scroll-area');
+  modal.classList.add('hidden');
+
+  // body スクロール復元
   document.body.style.overflow = '';
-  document.body.style.position = '';
-  document.body.style.width = '';
+
+  // イベントリスナーを削除してリセット
+  if (modal._preventTouch) {
+    modal.removeEventListener('touchmove', modal._preventTouch);
+    modal._preventTouch = null;
+  }
+  if (scrollArea._allowScroll) {
+    scrollArea.removeEventListener('touchmove', scrollArea._allowScroll);
+    scrollArea._allowScroll = null;
+  }
 }
 
 function setCfLevel(level) {
