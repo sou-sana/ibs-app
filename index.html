@@ -551,7 +551,7 @@
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-full shadow-lg z-300 opacity-0 transition-opacity duration-300 pointer-events-none">保存しました</div>
+<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none" style="z-index:500;">保存しました</div>
 
 <!-- カスタムFODMAP追加モーダル -->
 <!-- z-index:300 をインラインで指定（Tailwind の z-200 は存在しないため底辺ナビバー z-index:100 を確実に上回る） -->
@@ -1482,11 +1482,14 @@ function selectMealType(type) {
 
 function checkFodmapDetailed(text) {
   const results = { high: [], medium: [], low: [] };
-  const allDb = [...FODMAP_DB, ...state.customFodmap.map(c => ({...c, aliases:[]}))];
+  const custom = Array.isArray(state.customFodmap) ? state.customFodmap : [];
+  const allDb = [...FODMAP_DB, ...custom.map(c => ({...c, aliases:[]}))];
   allDb.forEach(food => {
     const allNames = [food.name, ...(food.aliases||[])];
     const found = allNames.some(n => n && text.includes(n));
-    if (found) results[food.level === 'medium' ? 'medium' : food.level].push(food);
+    // Guard: only push if level key exists in results
+    const lvl = food.level === 'medium' ? 'medium' : food.level;
+    if (found && results[lvl]) results[lvl].push(food);
   });
   return results;
 }
@@ -1787,12 +1790,15 @@ function scoreGrade(s) { return s>=80?'A':s>=60?'B':s>=40?'C':'D'; }
 
 function updateScoreUI(score, symRecs, mealRecs, stoolRecs) {
   const circle = document.getElementById('score-ring-circle');
+  if (!circle) return;
   circle.style.strokeDashoffset = 251.2 - (score/100)*251.2;
   const grade = scoreGrade(score);
   const colors = {A:'#10b981',B:'#3b82f6',C:'#f59e0b',D:'#ef4444'};
   circle.style.stroke = colors[grade];
-  document.getElementById('score-value').textContent = score;
+  const sv = document.getElementById('score-value');
+  if (sv) sv.textContent = score;
   const badge = document.getElementById('score-grade-badge');
+  if (!badge) return;
   badge.textContent = grade; badge.className = `text-white text-xs font-bold px-2 py-0.5 rounded-full grade-${grade}`;
 
   const hasPain = stoolRecs.some(r => r.symptoms && r.symptoms['腹痛']);
@@ -1864,12 +1870,17 @@ function generateAdvice(symRecs, mealRecs, stoolRecs) {
 let _realtimeListenersActive = false;
 
 function renderHomeFromState() {
-  const score = calcScore(state.todaySym, state.todayMeal, state.todayStool);
-  updateScoreUI(score, state.todaySym, state.todayMeal, state.todayStool);
-  document.getElementById('advice-text').textContent = generateAdvice(state.todaySym, state.todayMeal, state.todayStool);
-  renderMealSlots(state.todayMeal);
-  renderTodaySymptoms(state.todaySym, state.todayStool);
-  renderTodayStool(state.todayStool);
+  try {
+    const score = calcScore(state.todaySym, state.todayMeal, state.todayStool);
+    updateScoreUI(score, state.todaySym, state.todayMeal, state.todayStool);
+    const adv = document.getElementById('advice-text');
+    if (adv) adv.textContent = generateAdvice(state.todaySym, state.todayMeal, state.todayStool);
+    renderMealSlots(state.todayMeal);
+    renderTodaySymptoms(state.todaySym, state.todayStool);
+    renderTodayStool(state.todayStool);
+  } catch(e) {
+    console.error('renderHomeFromState error:', e);
+  }
 }
 
 function setupRealtimeListeners() {
@@ -1900,6 +1911,7 @@ function loadTodayData() {
   const today = todayStr();
   const uid = state.viewingUserId || state.userId;
   const fc = state.familyCode;
+  if (!uid || !fc) return;
   Promise.all([
     db.ref(`families/${fc}/records/${uid}/symptoms`).orderByChild('date').equalTo(today).get(),
     db.ref(`families/${fc}/records/${uid}/meals`).orderByChild('date').equalTo(today).get(),
@@ -1910,6 +1922,8 @@ function loadTodayData() {
     if (ms.exists()) ms.forEach(c => state.todayMeal.push({id:c.key,...c.val()}));
     if (ts.exists()) ts.forEach(c => state.todayStool.push({id:c.key,...c.val()}));
     renderHomeFromState();
+  }).catch(e => {
+    console.error('loadTodayData error:', e);
   });
 }
 
@@ -2440,7 +2454,8 @@ function searchFodmap() {
   const q = document.getElementById('fodmap-search').value.trim();
   const results = document.getElementById('fodmap-search-results');
   if (!q) { results.innerHTML=''; return; }
-  const allDb = [...FODMAP_DB, ...state.customFodmap.map(c => ({...c, aliases:[], _custom:true}))];
+  const _cf = Array.isArray(state.customFodmap) ? state.customFodmap : [];
+  const allDb = [...FODMAP_DB, ..._cf.map(c => ({...c, aliases:[], _custom:true}))];
   const found = allDb.filter(f =>
     f.name.includes(q) || (f.aliases||[]).some(a => a.includes(q))
   );
@@ -2716,8 +2731,12 @@ function mealIcon(t) { return {'朝食':'☀️','昼食':'🌤️','夕食':'�
 function escHtml(s) { if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function showToast(msg) {
   const t=document.getElementById('toast');
+  if (!t) return;
   t.textContent=msg; t.style.opacity='1';
-  setTimeout(()=>{t.style.opacity='0'},2500);
+  // エラーメッセージは5秒、通常は2.5秒表示
+  const duration = msg.startsWith('❌') ? 5000 : 2500;
+  clearTimeout(t._toastTimer);
+  t._toastTimer = setTimeout(()=>{t.style.opacity='0'}, duration);
 }
 </script>
 </body>
