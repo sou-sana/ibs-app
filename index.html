@@ -1078,8 +1078,8 @@ function setRole(role) {
 
 function goSetup() {
   const name = document.getElementById('input-name').value.trim();
-  if (!name) { alert('お名前を入力してください'); return; }
-  if (!state.selectedRole) { alert('役割を選択してください'); return; }
+  if (!name) { showToast('⚠️ お名前を入力してください'); return; }
+  if (!state.selectedRole) { showToast('⚠️ 役割を選択してください'); return; }
   state.userName = name;
   state.userRole = state.selectedRole;
   state.userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
@@ -1387,7 +1387,7 @@ function loadPresets() {
 
 function savePreset() {
   const foods = document.getElementById('meal-foods').value.trim();
-  if (!foods) { alert('先に食べたものを入力してください'); return; }
+  if (!foods) { showToast('⚠️ 先に食べたものを入力してください'); return; }
   const name = prompt('セット名を入力（例：朝食定番、給食セット）');
   if (!name || !name.trim()) return;
   const presets = JSON.parse(localStorage.getItem('ibs_meal_presets') || '[]');
@@ -1429,7 +1429,12 @@ function toggleStoolSym(btn) {
 }
 
 async function saveStool() {
-  if (!state.selectedStoolType) { alert('便の形状を選択してください'); return; }
+  if (!state.selectedStoolType) { showToast('⚠️ 便の形状を選択してください'); return; }
+  if (!state.familyCode || !state.userId) {
+    showToast('⚠️ ログイン状態を確認してください');
+    console.error('saveStool: familyCode=', state.familyCode, 'userId=', state.userId);
+    return;
+  }
   const time = getRecordedTime('stool-time');
   const symptoms = {};
   document.querySelectorAll('.stool-sym-btn.selected').forEach(b => {
@@ -1450,7 +1455,7 @@ async function saveStool() {
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
     showToast('便を記録しました'); loadTodayData();
-  } catch(e) { alert('保存失敗: ' + e.message); }
+  } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
 // =========================================================
@@ -1529,7 +1534,7 @@ function saveMeal() {
 function showMealError(msg) {
   const el = document.getElementById('meal-error-msg');
   if (el) { el.textContent = msg; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'), 3000); }
-  else { alert(msg); }
+  else { showToast('⚠️ ' + msg); }
 }
 
 function closeMealConfirm() {
@@ -1538,6 +1543,11 @@ function closeMealConfirm() {
 
 async function confirmSaveMeal() {
   closeMealConfirm();
+  if (!state.familyCode || !state.userId) {
+    showToast('⚠️ ログイン状態を確認してください');
+    console.error('confirmSaveMeal: familyCode=', state.familyCode, 'userId=', state.userId);
+    return;
+  }
   const foods = document.getElementById('meal-foods').value.trim();
   const { high, medium } = checkFodmapDetailed(foods);
   const time = getRecordedTime('meal-time');
@@ -1558,7 +1568,7 @@ async function confirmSaveMeal() {
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
     showToast('食事を記録しました ✅'); loadTodayData();
-  } catch(e) { alert('保存失敗: ' + e.message); }
+  } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
 // =========================================================
@@ -1961,7 +1971,7 @@ async function deleteRecord(type, id) {
     showToast('削除しました');
     loadTodayData();
     if (document.getElementById('tab-history').classList.contains('active')) renderHistory();
-  } catch(e) { alert('削除失敗: ' + e.message); }
+  } catch(e) { console.error('削除失敗', e); showToast('❌ 削除失敗: ' + (e.message || e)); }
 }
 
 // =========================================================
@@ -2533,8 +2543,15 @@ async function saveCustomFodmap() {
   try {
     await db.ref(`families/${state.familyCode}/customFodmap`).push(entry);
     closeCustomFodmapModal();
-    showToast(`「${name}」を追加しました ✅`);
     await loadCustomFodmap();
+    // FODMAPタブに移動して登録結果をすぐ確認できるようにする
+    openTab('fodmap');
+    // マイFODMAPセクションまでスクロール
+    setTimeout(() => {
+      const sec = document.getElementById('my-fodmap-section');
+      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+    showToast(`「${name}」をマイFODMAPに追加しました ✅`);
   } catch(e) {
     console.error('saveCustomFodmap error:', e);
     showToast('❌ 保存失敗: ' + (e.message || e));
@@ -2544,12 +2561,15 @@ async function saveCustomFodmap() {
 }
 
 async function loadCustomFodmap() {
+  if (!state.familyCode) return;
   try {
     const snap = await db.ref(`families/${state.familyCode}/customFodmap`).get();
     state.customFodmap = [];
-    if (snap.exists()) snap.forEach(c => state.customFodmap.push({id:c.key,...c.val()}));
+    if (snap.exists()) snap.forEach(c => state.customFodmap.push({id:c.key, ...c.val()}));
     renderMyFodmap();
-  } catch(e) {}
+  } catch(e) {
+    console.error('loadCustomFodmap error:', e);
+  }
 }
 
 async function deleteCustomFodmap(id, name) {
@@ -2558,7 +2578,7 @@ async function deleteCustomFodmap(id, name) {
     await db.ref(`families/${state.familyCode}/customFodmap/${id}`).remove();
     showToast('削除しました');
     await loadCustomFodmap();
-  } catch(e) { alert('削除失敗: ' + e.message); }
+  } catch(e) { console.error('削除失敗', e); showToast('❌ 削除失敗: ' + (e.message || e)); }
 }
 
 function renderMyFodmap() {
