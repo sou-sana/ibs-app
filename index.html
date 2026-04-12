@@ -1467,7 +1467,8 @@ async function saveStool() {
     document.querySelectorAll('.stool-sym-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
-    showToast('便を記録しました'); loadTodayData();
+    showToast('便を記録しました');
+    openTab('home');
   } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
@@ -1584,7 +1585,8 @@ async function confirmSaveMeal() {
     document.getElementById('meal-time').value = '';
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
-    showToast('食事を記録しました ✅'); loadTodayData();
+    showToast('食事を記録しました ✅');
+    openTab('home');
   } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
@@ -1807,11 +1809,15 @@ function updateScoreUI(score, symRecs, mealRecs, stoolRecs) {
   const mealTypes = new Set(mealRecs.map(r => r.mealType));
   const painText = hasPain ? 'あり (-15)' : 'なし';
   const diarrheaText = hasDiarrhea ? 'あり (-10)' : 'なし';
-  document.getElementById('sd-pain').innerHTML=`<span>腹痛・下痢</span><span class="${(hasPain||hasDiarrhea)?'text-red-500':'text-gray-500'}">${hasPain?'腹痛 ':''}${hasDiarrhea?'下痢':''}${(!hasPain&&!hasDiarrhea)?'なし':''}</span>`;
+  const sdPain = document.getElementById('sd-pain');
+  const sdStool = document.getElementById('sd-stool');
+  const sdFodmap = document.getElementById('sd-fodmap');
+  const sdMeal = document.getElementById('sd-meal');
+  if (sdPain) sdPain.innerHTML=`<span>腹痛・下痢</span><span class="${(hasPain||hasDiarrhea)?'text-red-500':'text-gray-500'}">${hasPain?'腹痛 ':''}${hasDiarrhea?'下痢':''}${(!hasPain&&!hasDiarrhea)?'なし':''}</span>`;
   const stoolLabel = stoolRecs.length>0 ? `${stoolRecs[0].bristolType}型` : '未記録';
-  document.getElementById('sd-stool').innerHTML=`<span>便の状態</span><span>${stoolLabel}</span>`;
-  document.getElementById('sd-fodmap').innerHTML=`<span>FODMAP</span><span class="${totalHigh>0?'text-orange-500':'text-green-500'}">${totalHigh}品目 (-${Math.min(totalHigh*5,25)})</span>`;
-  document.getElementById('sd-meal').innerHTML=`<span>食事記録</span><span class="text-green-500">${mealTypes.size}食 (+${Math.min(mealTypes.size*3,9)})</span>`;
+  if (sdStool) sdStool.innerHTML=`<span>便の状態</span><span>${stoolLabel}</span>`;
+  if (sdFodmap) sdFodmap.innerHTML=`<span>FODMAP</span><span class="${totalHigh>0?'text-orange-500':'text-green-500'}">${totalHigh}品目 (-${Math.min(totalHigh*5,25)})</span>`;
+  if (sdMeal) sdMeal.innerHTML=`<span>食事記録</span><span class="text-green-500">${mealTypes.size}食 (+${Math.min(mealTypes.size*3,9)})</span>`;
 }
 
 // =========================================================
@@ -1880,6 +1886,7 @@ function renderHomeFromState() {
     renderTodayStool(state.todayStool);
   } catch(e) {
     console.error('renderHomeFromState error:', e);
+    showToast('⚠️ 画面更新エラー: ' + e.message);
   }
 }
 
@@ -1933,6 +1940,7 @@ function loadTodayData() {
 function renderMealSlots(mealRecs) {
   const slots = [['朝食','☀️'],['昼食','🌤️'],['夕食','🌙'],['間食','🍪']];
   const container = document.getElementById('meal-slots-container');
+  if (!container) return;
   container.innerHTML = '';
   slots.forEach(([slot, icon]) => {
     const rec = mealRecs.find(r => r.mealType === slot);
@@ -1961,6 +1969,7 @@ function renderMealSlots(mealRecs) {
 
 function renderTodaySymptoms(symRecs, stoolRecs) {
   const c = document.getElementById('today-symptom-summary');
+  if (!c) return;
   // Collect symptoms from stool records
   const allSyms = new Set();
   stoolRecs.forEach(r => { if (r.symptoms) Object.keys(r.symptoms).forEach(s => allSyms.add(s)); });
@@ -1973,6 +1982,7 @@ function renderTodaySymptoms(symRecs, stoolRecs) {
 
 function renderTodayStool(stoolRecs) {
   const c = document.getElementById('today-stool-summary');
+  if (!c) return;
   if (stoolRecs.length === 0) { c.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">記録なし</p>'; return; }
   const latest = stoolRecs.sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt))[0];
   const isGood = latest.bristolType === 3 || latest.bristolType === 4;
