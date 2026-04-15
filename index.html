@@ -323,8 +323,8 @@
       <div class="px-4 pt-4 pb-2">
         <div class="flex gap-1 bg-gray-100 p-1 rounded-xl">
           <button onclick="showHistoryView('calendar')" id="hv-calendar" class="hview-tab">📅 カレンダー</button>
-          <button onclick="showHistoryView('timeline')" id="hv-timeline" class="hview-tab">⏱️ タイムライン</button>
-          <button onclick="showHistoryView('stats')" id="hv-stats" class="hview-tab active">📊 統計</button>
+          <button onclick="showHistoryView('timeline')" id="hv-timeline" class="hview-tab active">⏱️ タイムライン</button>
+          <button onclick="showHistoryView('stats')" id="hv-stats" class="hview-tab">📊 統計</button>
         </div>
       </div>
 
@@ -353,7 +353,7 @@
       </div>
 
       <!-- TIMELINE VIEW -->
-      <div id="hview-timeline" class="hidden px-4 pb-4">
+      <div id="hview-timeline" class="px-4 pb-4">
         <!-- Date + filter controls -->
         <div class="flex items-center gap-2 py-3">
           <button onclick="changeTimelineDate(-1)" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600">‹</button>
@@ -374,7 +374,7 @@
       </div>
 
       <!-- STATS VIEW -->
-      <div id="hview-stats" class="px-4 pb-4">
+      <div id="hview-stats" class="hidden px-4 pb-4">
         <!-- 7-day score row -->
         <div class="pt-3 pb-2">
           <p class="text-xs font-bold text-gray-600 mb-2">📈 直近7日間のスコア</p>
@@ -2000,19 +2000,24 @@ function renderTodayStool(stoolRecs) {
   const c = document.getElementById('today-stool-summary');
   if (!c) return;
   if (stoolRecs.length === 0) { c.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">記録なし</p>'; return; }
-  const latest = stoolRecs.sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt))[0];
-  const isGood = latest.bristolType === 3 || latest.bristolType === 4;
-  const isBad = latest.bristolType >= 6 || latest.bristolType <= 2;
-  const color = isGood ? 'text-green-600' : isBad ? 'text-red-500' : 'text-orange-500';
-  const syms = latest.symptoms ? Object.keys(latest.symptoms) : [];
-  c.innerHTML = `
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm font-medium ${color}">${BRISTOL_LABELS[latest.bristolType]}</p>
-        ${syms.length>0?`<div class="flex flex-wrap gap-1 mt-1">${syms.map(s=>`<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">${s}</span>`).join('')}</div>`:''}
+  // 時刻順（古い順）で全件表示
+  const sorted = [...stoolRecs].sort((a,b) => (a.time||'00:00').localeCompare(b.time||'00:00') || new Date(a.createdAt||0)-new Date(b.createdAt||0));
+  c.innerHTML = sorted.map(rec => {
+    const isGood = rec.bristolType === 3 || rec.bristolType === 4;
+    const isBad  = rec.bristolType >= 6 || rec.bristolType <= 2;
+    const color  = isGood ? 'text-green-600' : isBad ? 'text-red-500' : 'text-orange-500';
+    const syms   = rec.symptoms ? Object.keys(rec.symptoms) : [];
+    return `<div class="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400 shrink-0">${rec.time || '--:--'}</span>
+          <p class="text-sm font-medium ${color} truncate">${BRISTOL_LABELS[rec.bristolType]}</p>
+        </div>
+        ${syms.length>0?`<div class="flex flex-wrap gap-1 mt-0.5">${syms.map(s=>`<span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">${s}</span>`).join('')}</div>`:''}
       </div>
-      <button onclick="deleteRecord('stools','${latest.id}')" class="delete-btn">削除</button>
+      <button onclick="deleteRecord('stools','${rec.id}')" class="delete-btn ml-2 shrink-0">削除</button>
     </div>`;
+  }).join('');
 }
 
 // =========================================================
@@ -2032,7 +2037,7 @@ async function deleteRecord(type, id) {
 // HISTORY — 3-VIEW SYSTEM
 // =========================================================
 let hState = {
-  view: 'stats',
+  view: 'timeline',
   calYear: new Date().getFullYear(),
   calMonth: new Date().getMonth(),
   selectedDate: todayStr(),
