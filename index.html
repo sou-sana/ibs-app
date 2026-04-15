@@ -2166,10 +2166,19 @@ function selectCalDay(dateStr) {
 }
 
 function renderCalDayRecords(dateStr) {
-  const { symptoms, meals, stools } = hState.cachedAll || {symptoms:[],meals:[],stools:[]};
-  const sr = symptoms.filter(r => r.date===dateStr);
-  const mr = meals.filter(r => r.date===dateStr);
-  const tr = stools.filter(r => r.date===dateStr);
+  const isToday = dateStr === todayStr();
+  let sr, mr, tr;
+  if (isToday) {
+    // 今日はリアルタイムstateを直接使用
+    sr = state.todaySym;
+    mr = state.todayMeal;
+    tr = state.todayStool;
+  } else {
+    const cache = hState.cachedAll || {symptoms:[],meals:[],stools:[]};
+    sr = cache.symptoms.filter(r => r.date===dateStr);
+    mr = cache.meals.filter(r => r.date===dateStr);
+    tr = cache.stools.filter(r => r.date===dateStr);
+  }
   const all = [
     ...sr.map(r => ({...r,_type:'symptom'})),
     ...mr.map(r => ({...r,_type:'meal'})),
@@ -2225,20 +2234,31 @@ function setTimelineFilter(f) {
 function renderTimeline() {
   const el = document.getElementById('timeline-date');
   const dateStr = el ? el.value : todayStr();
-
-  // キャッシュがなければ今すぐ取得してから描画
-  if (!hState.cachedAll) {
-    loadAllHistoryRecords().then(() => renderTimeline());
-    return;
-  }
-
-  const { symptoms, meals, stools } = hState.cachedAll;
+  const isToday = dateStr === todayStr();
   const f = hState.tlFilter;
 
+  let meals_src, stools_src, symptoms_src;
+
+  if (isToday) {
+    // 今日: リアルタイムリスナーが常に最新を保持するstateを直接使用
+    meals_src    = state.todayMeal;
+    stools_src   = state.todayStool;
+    symptoms_src = state.todaySym;
+  } else {
+    // 過去: キャッシュが無ければ取得
+    if (!hState.cachedAll) {
+      loadAllHistoryRecords().then(() => renderTimeline());
+      return;
+    }
+    meals_src    = hState.cachedAll.meals.filter(r => r.date === dateStr);
+    stools_src   = hState.cachedAll.stools.filter(r => r.date === dateStr);
+    symptoms_src = hState.cachedAll.symptoms.filter(r => r.date === dateStr);
+  }
+
   let all = [];
-  if (f==='all'||f==='meal')    all = all.concat(meals.filter(r=>r.date===dateStr).map(r=>({...r,_type:'meal'})));
-  if (f==='all'||f==='symptom') all = all.concat(symptoms.filter(r=>r.date===dateStr).map(r=>({...r,_type:'symptom'})));
-  if (f==='all'||f==='stool')   all = all.concat(stools.filter(r=>r.date===dateStr).map(r=>({...r,_type:'stool'})));
+  if (f==='all'||f==='meal')    all = all.concat(meals_src.map(r=>({...r,_type:'meal'})));
+  if (f==='all'||f==='symptom') all = all.concat(symptoms_src.map(r=>({...r,_type:'symptom'})));
+  if (f==='all'||f==='stool')   all = all.concat(stools_src.map(r=>({...r,_type:'stool'})));
   all.sort((a,b) => (a.time||'00:00').localeCompare(b.time||'00:00') || new Date(a.createdAt||0)-new Date(b.createdAt||0));
 
   const container = document.getElementById('timeline-content');
