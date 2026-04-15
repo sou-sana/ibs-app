@@ -1898,23 +1898,27 @@ function renderHomeFromState() {
 function setupRealtimeListeners() {
   if (_realtimeListenersActive) return;
   _realtimeListenersActive = true;
-  const today = todayStr();
   const uid = state.viewingUserId || state.userId;
   const fc = state.familyCode;
+  if (!uid || !fc) return;
 
-  db.ref(`families/${fc}/records/${uid}/meals`).orderByChild('date').equalTo(today).on('value', snap => {
+  // クエリなしで全件取得→ローカルで今日分フィルタ（インデックス依存を排除）
+  db.ref(`families/${fc}/records/${uid}/meals`).on('value', snap => {
+    const today = todayStr();
     state.todayMeal = [];
-    if (snap.exists()) snap.forEach(c => state.todayMeal.push({id:c.key,...c.val()}));
+    if (snap.exists()) snap.forEach(c => { const v = c.val(); if (v.date === today) state.todayMeal.push({id:c.key,...v}); });
     renderHomeFromState();
   });
-  db.ref(`families/${fc}/records/${uid}/stools`).orderByChild('date').equalTo(today).on('value', snap => {
+  db.ref(`families/${fc}/records/${uid}/stools`).on('value', snap => {
+    const today = todayStr();
     state.todayStool = [];
-    if (snap.exists()) snap.forEach(c => state.todayStool.push({id:c.key,...c.val()}));
+    if (snap.exists()) snap.forEach(c => { const v = c.val(); if (v.date === today) state.todayStool.push({id:c.key,...v}); });
     renderHomeFromState();
   });
-  db.ref(`families/${fc}/records/${uid}/symptoms`).orderByChild('date').equalTo(today).on('value', snap => {
+  db.ref(`families/${fc}/records/${uid}/symptoms`).on('value', snap => {
+    const today = todayStr();
     state.todaySym = [];
-    if (snap.exists()) snap.forEach(c => state.todaySym.push({id:c.key,...c.val()}));
+    if (snap.exists()) snap.forEach(c => { const v = c.val(); if (v.date === today) state.todaySym.push({id:c.key,...v}); });
     renderHomeFromState();
   });
 }
@@ -1924,18 +1928,20 @@ function loadTodayData() {
   const uid = state.viewingUserId || state.userId;
   const fc = state.familyCode;
   if (!uid || !fc) return;
+  // クエリなしで全件取得→ローカルで今日分フィルタ（インデックス依存を排除）
   Promise.all([
-    db.ref(`families/${fc}/records/${uid}/symptoms`).orderByChild('date').equalTo(today).get(),
-    db.ref(`families/${fc}/records/${uid}/meals`).orderByChild('date').equalTo(today).get(),
-    db.ref(`families/${fc}/records/${uid}/stools`).orderByChild('date').equalTo(today).get()
+    db.ref(`families/${fc}/records/${uid}/symptoms`).get(),
+    db.ref(`families/${fc}/records/${uid}/meals`).get(),
+    db.ref(`families/${fc}/records/${uid}/stools`).get()
   ]).then(([ss, ms, ts]) => {
     state.todaySym = []; state.todayMeal = []; state.todayStool = [];
-    if (ss.exists()) ss.forEach(c => state.todaySym.push({id:c.key,...c.val()}));
-    if (ms.exists()) ms.forEach(c => state.todayMeal.push({id:c.key,...c.val()}));
-    if (ts.exists()) ts.forEach(c => state.todayStool.push({id:c.key,...c.val()}));
+    if (ss.exists()) ss.forEach(c => { const v = c.val(); if (v.date === today) state.todaySym.push({id:c.key,...v}); });
+    if (ms.exists()) ms.forEach(c => { const v = c.val(); if (v.date === today) state.todayMeal.push({id:c.key,...v}); });
+    if (ts.exists()) ts.forEach(c => { const v = c.val(); if (v.date === today) state.todayStool.push({id:c.key,...v}); });
     renderHomeFromState();
   }).catch(e => {
     console.error('loadTodayData error:', e);
+    showToast('⚠️ データ読込エラー: ' + e.message);
   });
 }
 
