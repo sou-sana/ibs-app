@@ -2086,9 +2086,27 @@ function showHistoryView(view, reload=true) {
 function _renderCurrentView() {
   if (hState.view === 'calendar') buildCalendar();
   if (hState.view === 'timeline') {
-    // 当日に日付をセット（初回のみ）
     const el = document.getElementById('timeline-date');
-    if (el && !el.value) el.value = todayStr();
+    if (el && !el.value) {
+      // 今日に記録がなければ最新の記録日を自動選択
+      const today = todayStr();
+      const todayHasRecords = state.todayMeal.length > 0 || state.todayStool.length > 0 || state.todaySym.length > 0;
+      if (!todayHasRecords && hState.cachedAll) {
+        const pastDates = [
+          ...hState.cachedAll.meals.map(r => r.date),
+          ...hState.cachedAll.stools.map(r => r.date),
+          ...hState.cachedAll.symptoms.map(r => r.date)
+        ].filter(d => d && d < today);
+        if (pastDates.length > 0) {
+          pastDates.sort((a, b) => b.localeCompare(a));
+          el.value = pastDates[0]; // 最新の記録日にジャンプ
+        } else {
+          el.value = today;
+        }
+      } else {
+        el.value = today;
+      }
+    }
     renderTimeline();
   }
   if (hState.view === 'stats') renderStats();
@@ -2208,7 +2226,7 @@ function renderCalDayRecords(dateStr) {
 // ─── TIMELINE ─────────────────────────────────────────────
 function setTimelineToday() {
   const el = document.getElementById('timeline-date');
-  if (el) el.value = todayStr();
+  if (el) { el.value = todayStr(); renderTimeline(); }
 }
 
 function changeTimelineDate(delta) {
@@ -2274,7 +2292,12 @@ function renderTimeline() {
   ].filter(Boolean).join('　');
 
   if (all.length === 0) {
-    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">この日の記録はありません</p>';
+    let emptyMsg = '<p class="text-sm text-gray-400 text-center py-6">この日の記録はありません</p>';
+    if (isToday) {
+      // 今日が空の場合、前日へのヒントを表示
+      emptyMsg += '<p class="text-xs text-gray-400 text-center"><button onclick="changeTimelineDate(-1)" class="text-emerald-600 underline">← 前日の記録を見る</button></p>';
+    }
+    container.innerHTML = emptyMsg;
     return;
   }
 
