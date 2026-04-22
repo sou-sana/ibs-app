@@ -259,12 +259,14 @@
 
           <textarea id="meal-notes" rows="2" placeholder="食後の体調など（任意）"
             class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-emerald-400 mb-3"></textarea>
-          <p class="text-xs text-gray-500 mb-1">記録時刻</p>
+          <p class="text-xs text-gray-500 mb-1">記録日・時刻</p>
           <div class="flex gap-2 mb-3">
+            <input type="date" id="meal-date"
+              class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
             <input type="time" id="meal-time"
               class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
-            <button onclick="setNow('meal-time')"
-              class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-medium whitespace-nowrap">今すぐ</button>
+            <button onclick="setNow('meal-time'); document.getElementById('meal-date').value = todayStr();"
+              class="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-medium whitespace-nowrap">今</button>
           </div>
           <div id="meal-error-msg" class="hidden text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2 mb-2 text-center whitespace-pre-line"></div>
           <button onclick="saveMeal()" class="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold">食事を保存</button>
@@ -305,12 +307,14 @@
           </div>
           <textarea id="stool-notes" rows="2" placeholder="メモ（任意）"
             class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:border-emerald-400 mb-3"></textarea>
-          <p class="text-xs text-gray-500 mb-1">記録時刻</p>
+          <p class="text-xs text-gray-500 mb-1">記録日・時刻</p>
           <div class="flex gap-2 mb-3">
+            <input type="date" id="stool-date"
+              class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
             <input type="time" id="stool-time"
               class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-400">
-            <button onclick="setNow('stool-time')"
-              class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-medium whitespace-nowrap">今すぐ</button>
+            <button onclick="setNow('stool-time'); document.getElementById('stool-date').value = todayStr();"
+              class="px-3 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-medium whitespace-nowrap">今</button>
           </div>
           <button onclick="saveStool()" class="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold">便を保存</button>
         </div>
@@ -1356,7 +1360,7 @@ function openTab(name, skipReload) {
   if (name === 'home' && !skipReload) loadTodayData();
   if (name === 'history') renderHistory();
   if (name === 'family') loadMembers();
-  if (name === 'record') loadPresets();
+  if (name === 'record') { loadPresets(); initRecordDates(); }
   if (name === 'fodmap') loadCustomFodmap();
 }
 
@@ -1381,6 +1385,15 @@ function getRecordedTime(inputId) {
 // =========================================================
 // MEAL PRESETS
 // =========================================================
+function initRecordDates() {
+  // 記録フォームの日付を今日に初期設定（空のときだけ）
+  const today = todayStr();
+  const mealDateEl = document.getElementById('meal-date');
+  const stoolDateEl = document.getElementById('stool-date');
+  if (mealDateEl && !mealDateEl.value) mealDateEl.value = today;
+  if (stoolDateEl && !stoolDateEl.value) stoolDateEl.value = today;
+}
+
 function loadPresets() {
   const presets = JSON.parse(localStorage.getItem('ibs_meal_presets') || '[]');
   const container = document.getElementById('preset-chips');
@@ -1452,12 +1465,14 @@ async function saveStool() {
     return;
   }
   const time = getRecordedTime('stool-time');
+  const dateEl = document.getElementById('stool-date');
+  const recordDate = (dateEl && dateEl.value) ? dateEl.value : todayStr();
   const symptoms = {};
   document.querySelectorAll('.stool-sym-btn.selected').forEach(b => {
     symptoms[b.dataset.sym] = true;
   });
   const record = {
-    date: todayStr(), time,
+    date: recordDate, time,
     bristolType: state.selectedStoolType,
     symptoms,
     notes: document.getElementById('stool-notes').value.trim(),
@@ -1471,10 +1486,23 @@ async function saveStool() {
     document.querySelectorAll('.stool-sym-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
-    showToast('便を記録しました');
-    openTab('home', true);
-    // リアルタイムリスナーで即時反映 + 800ms後にサーバーから再取得（確実性向上）
-    setTimeout(() => loadTodayData(), 800);
+    document.getElementById('stool-date').value = todayStr(); // 日付を今日にリセット
+    if (recordDate === todayStr()) {
+      showToast('便を記録しました');
+      openTab('home', true);
+      setTimeout(() => loadTodayData(), 800);
+    } else {
+      showToast(`便を記録しました（${recordDate}）`);
+      // 過去日付 → 履歴タイムラインでその日を表示
+      hState.cachedAll = null;
+      const tlEl = document.getElementById('timeline-date');
+      if (tlEl) tlEl.value = recordDate;
+      openTab('history');
+      setTimeout(() => {
+        showHistoryView('timeline', false);
+        renderTimeline();
+      }, 300);
+    }
   } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
@@ -1574,8 +1602,10 @@ async function confirmSaveMeal() {
   const foods = document.getElementById('meal-foods').value.trim();
   const { high, medium } = checkFodmapDetailed(foods);
   const time = getRecordedTime('meal-time');
+  const mealDateEl = document.getElementById('meal-date');
+  const recordDate = (mealDateEl && mealDateEl.value) ? mealDateEl.value : todayStr();
   const record = {
-    date: todayStr(), time, mealType: state.selectedMealType,
+    date: recordDate, time, mealType: state.selectedMealType,
     foods, notes: document.getElementById('meal-notes').value.trim(),
     fodmapHighCount: high.length, fodmapHighFoods: high.map(f => f.name),
     fodmapMediumFoods: medium.map(f => f.name),
@@ -1589,12 +1619,25 @@ async function confirmSaveMeal() {
     document.getElementById('meal-foods').value = '';
     document.getElementById('meal-notes').value = '';
     document.getElementById('meal-time').value = '';
+    document.getElementById('meal-date').value = todayStr(); // 日付を今日にリセット
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
-    showToast('食事を記録しました ✅');
-    openTab('home', true);
-    // リアルタイムリスナーで即時反映 + 800ms後にサーバーから再取得（確実性向上）
-    setTimeout(() => loadTodayData(), 800);
+    if (recordDate === todayStr()) {
+      showToast('食事を記録しました ✅');
+      openTab('home', true);
+      setTimeout(() => loadTodayData(), 800);
+    } else {
+      showToast(`食事を記録しました ✅（${recordDate}）`);
+      // 過去日付 → 履歴タイムラインでその日を表示
+      hState.cachedAll = null;
+      const tlEl = document.getElementById('timeline-date');
+      if (tlEl) tlEl.value = recordDate;
+      openTab('history');
+      setTimeout(() => {
+        showHistoryView('timeline', false);
+        renderTimeline();
+      }, 300);
+    }
   } catch(e) { console.error('保存失敗', e); showToast('❌ 保存失敗: ' + (e.message || e)); }
 }
 
