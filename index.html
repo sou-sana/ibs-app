@@ -321,10 +321,13 @@
     <div id="tab-history" class="tab-content">
       <!-- View switcher -->
       <div class="px-4 pt-4 pb-2">
-        <div class="flex gap-1 bg-gray-100 p-1 rounded-xl">
-          <button onclick="showHistoryView('calendar')" id="hv-calendar" class="hview-tab">📅 カレンダー</button>
-          <button onclick="showHistoryView('timeline')" id="hv-timeline" class="hview-tab active">⏱️ タイムライン</button>
-          <button onclick="showHistoryView('stats')" id="hv-stats" class="hview-tab">📊 統計</button>
+        <div class="flex items-center gap-2">
+          <div class="flex flex-1 gap-1 bg-gray-100 p-1 rounded-xl">
+            <button onclick="showHistoryView('calendar')" id="hv-calendar" class="hview-tab">📅 カレンダー</button>
+            <button onclick="showHistoryView('timeline')" id="hv-timeline" class="hview-tab active">⏱️ タイムライン</button>
+            <button onclick="showHistoryView('stats')" id="hv-stats" class="hview-tab">📊 統計</button>
+          </div>
+          <button onclick="forceReloadHistory()" title="データを最新に更新" class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 text-base shrink-0">🔄</button>
         </div>
       </div>
 
@@ -2046,19 +2049,29 @@ let hState = {
 };
 
 async function loadAllHistoryRecords() {
-  const uid = state.userId, fc = state.familyCode;
+  // viewingUserId を優先（家族モードで子を表示中の場合）
+  const uid = state.viewingUserId || state.userId;
+  const fc = state.familyCode;
+  if (!uid || !fc) { hState.cachedAll = { symptoms:[], meals:[], stools:[] }; return; }
   try {
+    // Firebase キャッシュを避けるため once() を使用し、Promise で解決
     const [ss, ms, ts] = await Promise.all([
-      db.ref(`families/${fc}/records/${uid}/symptoms`).get(),
-      db.ref(`families/${fc}/records/${uid}/meals`).get(),
-      db.ref(`families/${fc}/records/${uid}/stools`).get()
+      db.ref(`families/${fc}/records/${uid}/symptoms`).once('value'),
+      db.ref(`families/${fc}/records/${uid}/meals`).once('value'),
+      db.ref(`families/${fc}/records/${uid}/stools`).once('value')
     ]);
     const symptoms = [], meals = [], stools = [];
     if (ss.exists()) ss.forEach(c => symptoms.push({id:c.key,...c.val()}));
     if (ms.exists()) ms.forEach(c => meals.push({id:c.key,...c.val()}));
     if (ts.exists()) ts.forEach(c => stools.push({id:c.key,...c.val()}));
     hState.cachedAll = { symptoms, meals, stools };
+    console.log('[loadAllHistoryRecords] uid=', uid, '| meals:', meals.length, '| stools:', stools.length, '| symptoms:', symptoms.length);
+    // 日付別件数をコンソールに出力（デバッグ用）
+    const dateCounts = {};
+    [...meals, ...stools, ...symptoms].forEach(r => { dateCounts[r.date] = (dateCounts[r.date]||0)+1; });
+    console.log('[loadAllHistoryRecords] 日付別件数:', JSON.stringify(dateCounts));
   } catch(e) {
+    console.error('[loadAllHistoryRecords] エラー:', e);
     hState.cachedAll = { symptoms:[], meals:[], stools:[] };
   }
 }
@@ -2068,6 +2081,15 @@ function renderHistory() {
   loadAllHistoryRecords().then(() => {
     showHistoryView(hState.view, false);
   });
+}
+
+function forceReloadHistory() {
+  hState.cachedAll = null; // キャッシュをクリア
+  // タイムラインの日付もリセット（自動で最新記録日を選ばせる）
+  const el = document.getElementById('timeline-date');
+  if (el) el.value = '';
+  showToast('🔄 データを更新中...');
+  renderHistory();
 }
 
 function showHistoryView(view, reload=true) {
