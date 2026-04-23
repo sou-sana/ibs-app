@@ -176,6 +176,15 @@
         <p id="advice-text" class="text-sm text-emerald-800">記録を追加するとアドバイスが表示されます</p>
       </div>
 
+      <!-- 前日サマリーカード（今日が空のときだけ表示） -->
+      <div id="yesterday-card" class="hidden mx-4 mt-3 border border-emerald-200 bg-emerald-50 rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-sm font-semibold text-emerald-700">📅 前日の記録</p>
+          <button onclick="goToYesterday()" class="text-xs text-emerald-600 font-medium bg-white border border-emerald-200 px-3 py-1 rounded-lg">履歴で確認 →</button>
+        </div>
+        <p id="yesterday-summary-text" class="text-xs text-emerald-800"></p>
+      </div>
+
       <!-- Meal Slots -->
       <div class="mx-4 mt-3 bg-white rounded-2xl shadow-sm p-4">
         <div class="flex items-center justify-between mb-3">
@@ -1487,14 +1496,13 @@ async function saveStool() {
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
     document.getElementById('stool-date').value = todayStr(); // 日付を今日にリセット
+    hState.cachedAll = null; // 履歴キャッシュをリセット（次回履歴を開いたとき最新取得）
     if (recordDate === todayStr()) {
       showToast('便を記録しました');
       openTab('home', true);
       setTimeout(() => loadTodayData(), 800);
     } else {
       showToast(`便を記録しました（${recordDate}）`);
-      // 過去日付 → 履歴タイムラインでその日を表示
-      hState.cachedAll = null;
       const tlEl = document.getElementById('timeline-date');
       if (tlEl) tlEl.value = recordDate;
       openTab('history');
@@ -1622,14 +1630,13 @@ async function confirmSaveMeal() {
     document.getElementById('meal-date').value = todayStr(); // 日付を今日にリセット
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
+    hState.cachedAll = null; // 履歴キャッシュをリセット（次回履歴を開いたとき最新取得）
     if (recordDate === todayStr()) {
       showToast('食事を記録しました ✅');
       openTab('home', true);
       setTimeout(() => loadTodayData(), 800);
     } else {
       showToast(`食事を記録しました ✅（${recordDate}）`);
-      // 過去日付 → 履歴タイムラインでその日を表示
-      hState.cachedAll = null;
       const tlEl = document.getElementById('timeline-date');
       if (tlEl) tlEl.value = recordDate;
       openTab('history');
@@ -1935,10 +1942,52 @@ function renderHomeFromState() {
     renderMealSlots(state.todayMeal);
     renderTodaySymptoms(state.todaySym, state.todayStool);
     renderTodayStool(state.todayStool);
+    renderYesterdayCard();
   } catch(e) {
     console.error('renderHomeFromState error:', e);
     showToast('⚠️ 画面更新エラー: ' + e.message);
   }
+}
+
+function renderYesterdayCard() {
+  const card = document.getElementById('yesterday-card');
+  const text = document.getElementById('yesterday-summary-text');
+  if (!card || !text) return;
+  // 今日に記録がなければ前日カードを表示
+  const todayEmpty = state.todayMeal.length === 0 && state.todayStool.length === 0 && state.todaySym.length === 0;
+  if (!todayEmpty) { card.classList.add('hidden'); return; }
+  // 昨日の日付
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  const yestStr = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`;
+  state._yesterdayStr = yestStr; // goToYesterday() で参照
+  // キャッシュから昨日の件数を取得
+  if (hState.cachedAll) {
+    const m = hState.cachedAll.meals.filter(r => r.date === yestStr).length;
+    const s = hState.cachedAll.stools.filter(r => r.date === yestStr).length;
+    const sy = hState.cachedAll.symptoms.filter(r => r.date === yestStr).length;
+    if (m === 0 && s === 0 && sy === 0) {
+      card.classList.add('hidden'); return;
+    }
+    const parts = [];
+    if (m > 0) parts.push(`食事 ${m}件`);
+    if (s > 0) parts.push(`便 ${s}件`);
+    if (sy > 0) parts.push(`症状 ${sy}件`);
+    text.textContent = `${parseInt(yestStr.split('-')[1])}月${parseInt(yestStr.split('-')[2])}日の記録：${parts.join('・')}`;
+    card.classList.remove('hidden');
+  } else {
+    // キャッシュがなければ非同期で取得して再表示
+    loadAllHistoryRecords().then(() => renderYesterdayCard());
+  }
+}
+
+function goToYesterday() {
+  const yestStr = state._yesterdayStr;
+  if (!yestStr) return;
+  hState.cachedAll = null;
+  const tlEl = document.getElementById('timeline-date');
+  if (tlEl) tlEl.value = yestStr;
+  openTab('history');
+  setTimeout(() => { showHistoryView('timeline', false); renderTimeline(); }, 300);
 }
 
 function setupRealtimeListeners() {
@@ -2152,25 +2201,24 @@ function _renderCurrentView() {
   if (hState.view === 'calendar') buildCalendar();
   if (hState.view === 'timeline') {
     const el = document.getElementById('timeline-date');
-    if (el && !el.value) {
-      // 今日に記録がなければ最新の記録日を自動選択
-      const today = todayStr();
-      const todayHasRecords = state.todayMeal.length > 0 || state.todayStool.length > 0 || state.todaySym.length > 0;
-      if (!todayHasRecords && hState.cachedAll) {
-        const pastDates = [
-          ...hState.cachedAll.meals.map(r => r.date),
-          ...hState.cachedAll.stools.map(r => r.date),
-          ...hState.cachedAll.symptoms.map(r => r.date)
-        ].filter(d => d && d < today);
-        if (pastDates.length > 0) {
-          pastDates.sort((a, b) => b.localeCompare(a));
-          el.value = pastDates[0]; // 最新の記録日にジャンプ
-        } else {
-          el.value = today;
-        }
+    const today = todayStr();
+    // el.value が空、または今日を表示中なのに記録がない場合は最新記録日に自動移動
+    const showingToday = !el.value || el.value === today;
+    const todayHasRecords = state.todayMeal.length > 0 || state.todayStool.length > 0 || state.todaySym.length > 0;
+    if (showingToday && !todayHasRecords && hState.cachedAll) {
+      const pastDates = [
+        ...hState.cachedAll.meals.map(r => r.date),
+        ...hState.cachedAll.stools.map(r => r.date),
+        ...hState.cachedAll.symptoms.map(r => r.date)
+      ].filter(d => d && d < today);
+      if (pastDates.length > 0) {
+        pastDates.sort((a, b) => b.localeCompare(a));
+        el.value = pastDates[0]; // 最新の記録日にジャンプ
       } else {
         el.value = today;
       }
+    } else if (!el.value) {
+      el.value = today;
     }
     renderTimeline();
   }
