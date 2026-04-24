@@ -1621,16 +1621,45 @@ async function confirmSaveMeal() {
   };
   try {
     const saveUid = state.viewingUserId || state.userId;
-    await db.ref(`families/${state.familyCode}/records/${saveUid}/meals`).push(record);
+    const mealRef = db.ref(`families/${state.familyCode}/records/${saveUid}/meals`);
+    // push() を await するとサーバー書き込み完了後にキー付き ref が返る
+    const savedRef = await mealRef.push(record);
+    const newKey = savedRef ? savedRef.key : null;
+
+    // ── サーバー確認：書き込んだデータが実際に存在するか検証 ──
+    if (newKey) {
+      try {
+        await new Promise(r => setTimeout(r, 600)); // サーバー反映を待つ
+        const verifyRef = db.ref(`families/${state.familyCode}/records/${saveUid}/meals/${newKey}`);
+        const verify = await (verifyRef.get ? verifyRef.get() : verifyRef.once('value'));
+        if (!verify.exists()) {
+          // 書き込まれていない → set() で再試行
+          console.warn('[confirmSaveMeal] 確認失敗、set()で再保存 key=', newKey);
+          await db.ref(`families/${state.familyCode}/records/${saveUid}/meals/${newKey}`).set(record);
+          const verify2Ref = db.ref(`families/${state.familyCode}/records/${saveUid}/meals/${newKey}`);
+          const verify2 = await (verify2Ref.get ? verify2Ref.get() : verify2Ref.once('value'));
+          if (!verify2.exists()) {
+            showToast('⚠️ 食事がFirebaseに保存されませんでした。ルールを確認してください。');
+            console.error('[confirmSaveMeal] 再保存も失敗:', `meals/${newKey}`);
+            return;
+          }
+          console.log('[confirmSaveMeal] 再保存成功');
+        }
+      } catch(verifyErr) {
+        // 確認処理自体のエラーは無視して続行（保存は成功している可能性あり）
+        console.warn('[confirmSaveMeal] 確認スキップ:', verifyErr.message);
+      }
+    }
+
     state.selectedMealType = null;
     document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('meal-foods').value = '';
     document.getElementById('meal-notes').value = '';
     document.getElementById('meal-time').value = '';
-    document.getElementById('meal-date').value = todayStr(); // 日付を今日にリセット
+    document.getElementById('meal-date').value = todayStr();
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
-    hState.cachedAll = null; // 履歴キャッシュをリセット（次回履歴を開いたとき最新取得）
+    hState.cachedAll = null;
     if (recordDate === todayStr()) {
       showToast('食事を記録しました ✅');
       openTab('home', true);
