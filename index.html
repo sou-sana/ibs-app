@@ -1479,6 +1479,21 @@ function toggleStoolSym(btn) {
   btn.classList.toggle('selected');
 }
 
+// サーバー確認付き Firebase push（onComplete コールバックでサーバー到達を保証）
+// サーバー確認付き Firebase push
+// 接続確認 → push の順で実行し、オフライン時は保存を中止する
+async function pushWithServerConfirm(path, data) {
+  // Firebase の接続状態を確認（.info/connected はキャッシュなし・常にリアルタイム）
+  const connSnap = await db.ref('.info/connected').once('value');
+  const isConnected = connSnap.val() === true;
+  if (!isConnected) {
+    throw new Error('オフラインです。ネットワーク接続を確認してから再度保存してください');
+  }
+  // オンライン確認済み → push（サーバーへの送信が保証される）
+  const result = await db.ref(path).push(data);
+  return result ? result.key : null;
+}
+
 async function saveStool() {
   if (!state.selectedStoolType) { showToast('⚠️ 便の形状を選択してください'); return; }
   if (!state.familyCode || !state.userId) {
@@ -1502,7 +1517,8 @@ async function saveStool() {
   };
   try {
     const saveUid = state.viewingUserId || state.userId;
-    await db.ref(`families/${state.familyCode}/records/${saveUid}/stools`).push(record);
+    // onComplete コールバックでサーバー到達を確認してから成功とみなす
+    await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/stools`, record);
     state.selectedStoolType = null;
     document.querySelectorAll('#stool-form .stool-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.stool-sym-btn').forEach(b => b.classList.remove('selected'));
@@ -1634,35 +1650,8 @@ async function confirmSaveMeal() {
   };
   try {
     const saveUid = state.viewingUserId || state.userId;
-    const mealRef = db.ref(`families/${state.familyCode}/records/${saveUid}/meals`);
-    // push() を await するとサーバー書き込み完了後にキー付き ref が返る
-    const savedRef = await mealRef.push(record);
-    const newKey = savedRef ? savedRef.key : null;
-
-    // ── サーバー確認：書き込んだデータが実際に存在するか検証 ──
-    if (newKey) {
-      try {
-        await new Promise(r => setTimeout(r, 600)); // サーバー反映を待つ
-        const verifyRef = db.ref(`families/${state.familyCode}/records/${saveUid}/meals/${newKey}`);
-        const verify = await (verifyRef.get ? verifyRef.get() : verifyRef.once('value'));
-        if (!verify.exists()) {
-          // 書き込まれていない → set() で再試行
-          console.warn('[confirmSaveMeal] 確認失敗、set()で再保存 key=', newKey);
-          await db.ref(`families/${state.familyCode}/records/${saveUid}/meals/${newKey}`).set(record);
-          const verify2Ref = db.ref(`families/${state.familyCode}/records/${saveUid}/meals/${newKey}`);
-          const verify2 = await (verify2Ref.get ? verify2Ref.get() : verify2Ref.once('value'));
-          if (!verify2.exists()) {
-            showToast('⚠️ 食事がFirebaseに保存されませんでした。ルールを確認してください。');
-            console.error('[confirmSaveMeal] 再保存も失敗:', `meals/${newKey}`);
-            return;
-          }
-          console.log('[confirmSaveMeal] 再保存成功');
-        }
-      } catch(verifyErr) {
-        // 確認処理自体のエラーは無視して続行（保存は成功している可能性あり）
-        console.warn('[confirmSaveMeal] 確認スキップ:', verifyErr.message);
-      }
-    }
+    // onComplete コールバックでサーバー到達を確認してから成功とみなす
+    await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/meals`, record);
 
     state.selectedMealType = null;
     document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('selected'));
