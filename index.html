@@ -341,6 +341,7 @@
             <button onclick="showHistoryView('stats')" id="hv-stats" class="hview-tab">📊 統計</button>
           </div>
           <button onclick="forceReloadHistory()" title="データを最新に更新" class="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 text-base shrink-0">🔄</button>
+          <button onclick="showDiagnostic()" title="データ診断" class="w-8 h-8 flex items-center justify-center rounded-xl bg-orange-50 text-orange-500 text-base shrink-0">🔍</button>
         </div>
       </div>
 
@@ -636,6 +637,18 @@
       <button onclick="saveCustomFodmap()"
         style="flex:1; padding:12px; border-radius:12px; background:#10b981; color:#fff; font-weight:700;">追加する</button>
     </div>
+  </div>
+</div>
+
+<!-- 診断モーダル -->
+<div id="diagnostic-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style="z-index:500;">
+  <div class="bg-white rounded-2xl w-full max-w-md p-5 max-h-screen overflow-y-auto">
+    <div class="flex items-center justify-between mb-3">
+      <p class="font-bold text-gray-700">🔍 データ診断</p>
+      <button onclick="document.getElementById('diagnostic-modal').classList.add('hidden')" class="text-gray-400 text-xl">✕</button>
+    </div>
+    <div id="diagnostic-content" class="text-xs text-gray-700 space-y-2 font-mono bg-gray-50 rounded-xl p-3 whitespace-pre-wrap"></div>
+    <button onclick="document.getElementById('diagnostic-modal').classList.add('hidden')" class="mt-4 w-full py-2 bg-gray-100 text-gray-600 rounded-xl text-sm">閉じる</button>
   </div>
 </div>
 
@@ -2205,12 +2218,68 @@ function renderHistory() {
 }
 
 function forceReloadHistory() {
-  hState.cachedAll = null; // キャッシュをクリア
-  // タイムラインの日付もリセット（自動で最新記録日を選ばせる）
+  hState.cachedAll = null;
   const el = document.getElementById('timeline-date');
   if (el) el.value = '';
   showToast('🔄 データを更新中...');
   renderHistory();
+}
+
+async function showDiagnostic() {
+  const modal = document.getElementById('diagnostic-modal');
+  const content = document.getElementById('diagnostic-content');
+  modal.classList.remove('hidden');
+  content.textContent = '読み込み中...';
+
+  const uid = state.userId || '(未設定)';
+  const vid = state.viewingUserId || '(なし)';
+  const fc  = state.familyCode  || '(未設定)';
+  const readUid = state.viewingUserId || state.userId || '(未設定)';
+
+  let lines = [];
+  lines.push(`■ 現在のユーザー情報`);
+  lines.push(`userId       : ${uid}`);
+  lines.push(`viewingUserId: ${vid}`);
+  lines.push(`familyCode   : ${fc}`);
+  lines.push(`読み込みUID  : ${readUid}`);
+  lines.push(`今日の日付   : ${todayStr()}`);
+  lines.push('');
+
+  // 読み込みパスでデータを確認
+  try {
+    const paths = [
+      { label: `meals (uid=${readUid})`, ref: db.ref(`families/${fc}/records/${readUid}/meals`) },
+      { label: `stools (uid=${readUid})`, ref: db.ref(`families/${fc}/records/${readUid}/stools`) },
+    ];
+    // viewingUserId がある場合は親のパスも確認
+    if (state.viewingUserId && state.userId !== state.viewingUserId) {
+      paths.push({ label: `meals (親uid=${uid})`, ref: db.ref(`families/${fc}/records/${uid}/meals`) });
+      paths.push({ label: `stools (親uid=${uid})`, ref: db.ref(`families/${fc}/records/${uid}/stools`) });
+    }
+
+    lines.push(`■ Firebaseデータ確認`);
+    for (const p of paths) {
+      const snap = await p.ref.once('value');
+      if (!snap.exists()) {
+        lines.push(`${p.label}: 0件`);
+      } else {
+        const dateCounts = {};
+        snap.forEach(c => {
+          const v = c.val();
+          dateCounts[v.date || '(日付なし)'] = (dateCounts[v.date || '(日付なし)'] || 0) + 1;
+        });
+        const total = Object.values(dateCounts).reduce((a,b)=>a+b,0);
+        lines.push(`${p.label}: ${total}件`);
+        Object.entries(dateCounts).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,7).forEach(([d,n])=>{
+          lines.push(`  ${d}: ${n}件`);
+        });
+      }
+    }
+  } catch(e) {
+    lines.push(`エラー: ${e.message}`);
+  }
+
+  content.textContent = lines.join('\n');
 }
 
 function showHistoryView(view, reload=true) {
