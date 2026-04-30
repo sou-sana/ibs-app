@@ -1408,12 +1408,17 @@ function getRecordedTime(inputId) {
 // MEAL PRESETS
 // =========================================================
 function initRecordDates() {
-  // 記録フォームの日付を今日に初期設定（空のときだけ）
+  // 記録フォームの日付を常に「今日」にリセット
+  // ※ 空のときだけでなく毎回更新する理由:
+  //   アプリを閉じずに日付をまたぐと、前回保存時の日付がフォームに残ったまま
+  //   になる。リアルタイム保存がうっかり前日の日付で記録されるバグを防ぐため、
+  //   記録タブを開くたびに必ず今日の日付にリセットする。
+  //   過去日付で記録したい場合はユーザーが手動で変更する。
   const today = todayStr();
   const mealDateEl = document.getElementById('meal-date');
   const stoolDateEl = document.getElementById('stool-date');
-  if (mealDateEl && !mealDateEl.value) mealDateEl.value = today;
-  if (stoolDateEl && !stoolDateEl.value) stoolDateEl.value = today;
+  if (mealDateEl) mealDateEl.value = today;
+  if (stoolDateEl) stoolDateEl.value = today;
 }
 
 function loadPresets() {
@@ -1479,19 +1484,24 @@ function toggleStoolSym(btn) {
   btn.classList.toggle('selected');
 }
 
-// サーバー確認付き Firebase push（onComplete コールバックでサーバー到達を保証）
 // サーバー確認付き Firebase push
-// 接続確認 → push の順で実行し、オフライン時は保存を中止する
+// 1. 接続確認（オフライン時は即エラー）
+// 2. push(data, onComplete) コールバック形式でサーバー書き込み完了を待つ
+//    → await push() はローカルキャッシュへの書き込みで即 resolve するが、
+//      onComplete はサーバーがデータを受信・確認してから呼ばれる。
+//      これによりタブを閉じる前にデータが必ずサーバーに到達することを保証する。
 async function pushWithServerConfirm(path, data) {
-  // Firebase の接続状態を確認（.info/connected はキャッシュなし・常にリアルタイム）
   const connSnap = await db.ref('.info/connected').once('value');
   const isConnected = connSnap.val() === true;
   if (!isConnected) {
     throw new Error('オフラインです。ネットワーク接続を確認してから再度保存してください');
   }
-  // オンライン確認済み → push（サーバーへの送信が保証される）
-  const result = await db.ref(path).push(data);
-  return result ? result.key : null;
+  return new Promise((resolve, reject) => {
+    const ref = db.ref(path).push(data, (error) => {
+      if (error) reject(error);
+      else resolve(ref.key);
+    });
+  });
 }
 
 async function saveStool() {
