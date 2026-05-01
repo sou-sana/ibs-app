@@ -1065,6 +1065,13 @@ window.onload = function() {
   }
   // Init FODMAP list
   showFodmapList('high');
+
+  // バックグラウンドからフォアグラウンドに戻った際に未送信レコードを再送
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.userId) {
+      retryPendingWrites();
+    }
+  });
 };
 
 // =========================================================
@@ -1080,6 +1087,8 @@ function showMain() {
   updateHeader();
   loadTodayData();
   setupRealtimeListeners();
+  // 前回送信できなかった記録を再送（バックグラウンド移行中に切断した場合など）
+  setTimeout(() => retryPendingWrites(), 2000);
   if (state.userRole === 'parent') {
     document.getElementById('children-records').classList.remove('hidden');
     // 親も記録可能（子供のデータとして保存）
@@ -1484,24 +1493,82 @@ function toggleStoolSym(btn) {
   btn.classList.toggle('selected');
 }
 
-// サーバー確認付き Firebase push
-// 1. 接続確認（オフライン時は即エラー）
-// 2. push(data, onComplete) コールバック形式でサーバー書き込み完了を待つ
-//    → await push() はローカルキャッシュへの書き込みで即 resolve するが、
-//      onComplete はサーバーがデータを受信・確認してから呼ばれる。
-//      これによりタブを閉じる前にデータが必ずサーバーに到達することを保証する。
-async function pushWithServerConfirm(path, data) {
-  const connSnap = await db.ref('.info/connected').once('value');
-  const isConnected = connSnap.val() === true;
-  if (!isConnected) {
-    throw new Error('オフラインです。ネットワーク接続を確認してから再度保存してください');
-  }
-  return new Promise((resolve, reject) => {
-    const ref = db.ref(path).push(data, (error) => {
-      if (error) reject(error);
-      else resolve(ref.key);
-    });
+// =========================================================
+// Firebase REST API による確実な書き込み
+// =========================================================
+// Firebase SDK は WebSocket で通信するが、モバイルブラウザでタブをバック
+// グラウンドにした瞬間に WebSocket が切断され、未送信の書き込みが消える。
+// HTTP REST API (fetch) は WebSocket より安定しており、タブが一時的に
+// バックグラウンドになっても送信が完了する。
+// さらに localStorage にバックアップを取り、送信失敗時は次回起動時に再送する。
+
+const _DB_REST_URL = 'https://ibs-app-57273-default-rtdb.asia-southeast1.firebasedatabase.app';
+const _PENDING_PREFIX = 'ibs_pending_';
+
+function _savePendingLocally(path, data) {
+  const key = _PENDING_PREFIX + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  try {
+    localStorage.setItem(key, JSON.stringify({ path, data, savedAt: new Date().toISOString() }));
+  } catch(e) { console.warn('[pending] localStorage 保存失敗:', e); }
+  return key;
+}
+
+async function _pushViaRest(path, data) {
+  const url = `${_DB_REST_URL}/${path}.json`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    keepalive: true  // タブが閉じかけても送信を完了させる
   });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${txt}`);
+  }
+  const json = await res.json();
+  return json.name; // Firebase が生成したキー
+}
+
+async function pushWithServerConfirm(path, data) {
+  // Step1: まず localStorage にバックアップ（送信中にアプリが閉じられても復元できる）
+  const pendingKey = _savePendingLocally(path, data);
+  try {
+    // Step2: HTTP POST で Firebase に送信（WebSocket を使わないので安定）
+    const key = await _pushViaRest(path, data);
+    // Step3: 送信成功 → localStorage のバックアップを削除
+    localStorage.removeItem(pendingKey);
+    return key;
+  } catch(e) {
+    // 送信失敗 → localStorage のバックアップは残す → 次回起動時に再送
+    console.error('[pushWithServerConfirm] 送信失敗（次回再送）:', e);
+    throw new Error('保存に失敗しました。次回起動時に自動的に再送します。');
+  }
+}
+
+// 起動時・フォアグラウンド復帰時に未送信レコードを再送する
+async function retryPendingWrites() {
+  const keys = Object.keys(localStorage).filter(k => k.startsWith(_PENDING_PREFIX));
+  if (keys.length === 0) return;
+  console.log(`[retry] 未送信レコード ${keys.length} 件を再送`);
+  let retried = 0;
+  for (const key of keys) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) { localStorage.removeItem(key); continue; }
+      const item = JSON.parse(raw);
+      await _pushViaRest(item.path, item.data);
+      localStorage.removeItem(key);
+      retried++;
+      console.log('[retry] 再送成功:', item.path);
+    } catch(e) {
+      console.warn('[retry] 再送失敗（次回に持ち越し）:', e);
+    }
+  }
+  if (retried > 0) {
+    showToast(`📤 未送信の記録 ${retried} 件を保存しました`);
+    hState.cachedAll = null;
+    loadTodayData();
+  }
 }
 
 async function saveStool() {
