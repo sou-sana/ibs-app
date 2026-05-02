@@ -1494,15 +1494,19 @@ function toggleStoolSym(btn) {
 }
 
 // =========================================================
-// Firebase REST API による確実な書き込み
+// Firebase 確実書き込み（SDK callback + localStorage バックアップ）
 // =========================================================
-// Firebase SDK は WebSocket で通信するが、モバイルブラウザでタブをバック
-// グラウンドにした瞬間に WebSocket が切断され、未送信の書き込みが消える。
-// HTTP REST API (fetch) は WebSocket より安定しており、タブが一時的に
-// バックグラウンドになっても送信が完了する。
-// さらに localStorage にバックアップを取り、送信失敗時は次回起動時に再送する。
+// 問題: Firebase SDK は WebSocket 経由で通信し、モバイルでタブをバックグラウンド
+//       にした瞬間 WebSocket が切断、未送信データが消える。
+//       await push() はローカルキャッシュへの書き込みで即 resolve するため
+//       サーバーに届いていなくても「成功」扱いになる。
+//
+// 対策:
+//   1. 保存前に localStorage にバックアップ（端末に残る）
+//   2. push(data, onComplete) コールバック形式でサーバー到達を待つ
+//   3. 成功したら localStorage バックアップを削除
+//   4. 次回起動時に未送信バックアップを SDK で再送
 
-const _DB_REST_URL = 'https://ibs-app-57273-default-rtdb.asia-southeast1.firebasedatabase.app';
 const _PENDING_PREFIX = 'ibs_pending_';
 
 function _savePendingLocally(path, data) {
@@ -1513,35 +1517,25 @@ function _savePendingLocally(path, data) {
   return key;
 }
 
-async function _pushViaRest(path, data) {
-  const url = `${_DB_REST_URL}/${path}.json`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    keepalive: true  // タブが閉じかけても送信を完了させる
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`HTTP ${res.status}: ${txt}`);
-  }
-  const json = await res.json();
-  return json.name; // Firebase が生成したキー
-}
-
 async function pushWithServerConfirm(path, data) {
-  // Step1: まず localStorage にバックアップ（送信中にアプリが閉じられても復元できる）
+  // Step1: localStorage にバックアップ（送信中にタブが閉じても次回再送できる）
   const pendingKey = _savePendingLocally(path, data);
   try {
-    // Step2: HTTP POST で Firebase に送信（WebSocket を使わないので安定）
-    const key = await _pushViaRest(path, data);
-    // Step3: 送信成功 → localStorage のバックアップを削除
+    // Step2: SDK の onComplete コールバック形式で送信
+    //   → await push() と違い、サーバーが受信確認してからコールバックが呼ばれる
+    const key = await new Promise((resolve, reject) => {
+      const ref = db.ref(path).push(data, (error) => {
+        if (error) reject(error);
+        else resolve(ref.key);
+      });
+    });
+    // Step3: サーバー到達確認 → バックアップを削除
     localStorage.removeItem(pendingKey);
     return key;
   } catch(e) {
-    // 送信失敗 → localStorage のバックアップは残す → 次回起動時に再送
-    console.error('[pushWithServerConfirm] 送信失敗（次回再送）:', e);
-    throw new Error('保存に失敗しました。次回起動時に自動的に再送します。');
+    // 失敗した場合、localStorage バックアップを残して次回再送
+    console.error('[pushWithServerConfirm] 送信失敗:', e);
+    throw e;
   }
 }
 
@@ -1556,7 +1550,13 @@ async function retryPendingWrites() {
       const raw = localStorage.getItem(key);
       if (!raw) { localStorage.removeItem(key); continue; }
       const item = JSON.parse(raw);
-      await _pushViaRest(item.path, item.data);
+      // 再送も onComplete コールバック形式で
+      await new Promise((resolve, reject) => {
+        const ref = db.ref(item.path).push(item.data, (error) => {
+          if (error) reject(error);
+          else resolve(ref.key);
+        });
+      });
       localStorage.removeItem(key);
       retried++;
       console.log('[retry] 再送成功:', item.path);
