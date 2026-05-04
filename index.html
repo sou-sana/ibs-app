@@ -1143,7 +1143,14 @@ function generateCode() { return Math.random().toString(36).toUpperCase().substr
 
 async function createFamily() {
   const code = generateCode();
+  showSetupError('');
   try {
+    // 接続確認
+    const connSnap = await db.ref('.info/connected').once('value');
+    if (connSnap.val() !== true) {
+      showSetupError('ネットワークに接続されていません。Wi-Fiまたは通信環境を確認してください。');
+      return;
+    }
     await db.ref(`families/${code}/members/${state.userId}`).set({
       userId: state.userId, userName: state.userName, userRole: state.userRole,
       joinedAt: new Date().toISOString()
@@ -1152,7 +1159,10 @@ async function createFamily() {
     state.familyCode = code;
     saveSession();
     showMain();
-  } catch(e) { showSetupError('作成に失敗: ' + e.message); }
+  } catch(e) {
+    console.error('[createFamily] エラー:', e);
+    showSetupError('作成に失敗: ' + (e.message || e.code || JSON.stringify(e)));
+  }
 }
 
 async function joinFamily() {
@@ -1550,6 +1560,12 @@ async function retryPendingWrites() {
       const raw = localStorage.getItem(key);
       if (!raw) { localStorage.removeItem(key); continue; }
       const item = JSON.parse(raw);
+      // パスが不正（http:// で始まる REST URL 形式など）のものは削除してスキップ
+      if (!item.path || item.path.startsWith('http')) {
+        console.warn('[retry] 不正なパスのためスキップ・削除:', item.path);
+        localStorage.removeItem(key);
+        continue;
+      }
       // 再送も onComplete コールバック形式で
       await new Promise((resolve, reject) => {
         const ref = db.ref(item.path).push(item.data, (error) => {
@@ -1596,6 +1612,8 @@ async function saveStool() {
     const saveUid = state.viewingUserId || state.userId;
     // onComplete コールバックでサーバー到達を確認してから成功とみなす
     await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/stools`, record);
+    // 1秒後にFirebaseに実際に入っているか検証（コンソールに結果を出力）
+    setTimeout(() => _verifySaveInFirebase('stools', recordDate), 1000);
     state.selectedStoolType = null;
     document.querySelectorAll('#stool-form .stool-btn').forEach(b => b.classList.remove('selected'));
     document.querySelectorAll('.stool-sym-btn').forEach(b => b.classList.remove('selected'));
@@ -1729,7 +1747,7 @@ async function confirmSaveMeal() {
     const saveUid = state.viewingUserId || state.userId;
     // onComplete コールバックでサーバー到達を確認してから成功とみなす
     await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/meals`, record);
-
+    setTimeout(() => _verifySaveInFirebase('meals', recordDate), 1000);
     state.selectedMealType = null;
     document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('meal-foods').value = '';
@@ -2301,51 +2319,82 @@ async function showDiagnostic() {
   const vid = state.viewingUserId || '(なし)';
   const fc  = state.familyCode  || '(未設定)';
   const readUid = state.viewingUserId || state.userId || '(未設定)';
+  const now = new Date();
 
   let lines = [];
-  lines.push(`■ 現在のユーザー情報`);
-  lines.push(`userId       : ${uid}`);
-  lines.push(`viewingUserId: ${vid}`);
-  lines.push(`familyCode   : ${fc}`);
-  lines.push(`読み込みUID  : ${readUid}`);
-  lines.push(`今日の日付   : ${todayStr()}`);
+  lines.push(`=== データ診断 ===`);
+  lines.push(`日時: ${now.toLocaleString('ja-JP')}`);
+  lines.push(`今日: ${todayStr()}`);
+  lines.push(`userId: ${uid.slice(0,20)}`);
+  lines.push(`familyCode: ${fc}`);
   lines.push('');
 
-  // 読み込みパスでデータを確認
+  // localStorage 確認
   try {
-    const paths = [
-      { label: `meals (uid=${readUid})`, ref: db.ref(`families/${fc}/records/${readUid}/meals`) },
-      { label: `stools (uid=${readUid})`, ref: db.ref(`families/${fc}/records/${readUid}/stools`) },
-    ];
-    // viewingUserId がある場合は親のパスも確認
-    if (state.viewingUserId && state.userId !== state.viewingUserId) {
-      paths.push({ label: `meals (親uid=${uid})`, ref: db.ref(`families/${fc}/records/${uid}/meals`) });
-      paths.push({ label: `stools (親uid=${uid})`, ref: db.ref(`families/${fc}/records/${uid}/stools`) });
+    const pendingKeys = Object.keys(localStorage).filter(k => k.startsWith(_PENDING_PREFIX));
+    lines.push(`=== localStorage未送信 ===`);
+    if (pendingKeys.length === 0) {
+      lines.push('未送信なし（正常）');
+    } else {
+      pendingKeys.forEach(k => {
+        try {
+          const item = JSON.parse(localStorage.getItem(k));
+          lines.push(`⚠️ ${item.data.type || '?'} ${item.data.date || '?'} ${item.savedAt || ''}`);
+        } catch(e2) { lines.push(`⚠️ 不正: ${k}`); }
+      });
     }
+    lines.push('');
+  } catch(e) {}
 
-    lines.push(`■ Firebaseデータ確認`);
-    for (const p of paths) {
-      const snap = await p.ref.once('value');
+  // Firebase データ確認（直接サーバーから取得）
+  try {
+    lines.push(`=== Firebase内データ ===`);
+    for (const type of ['meals','stools']) {
+      const snap = await db.ref(`families/${fc}/records/${readUid}/${type}`).once('value');
       if (!snap.exists()) {
-        lines.push(`${p.label}: 0件`);
+        lines.push(`${type}: 0件`);
       } else {
-        const dateCounts = {};
-        snap.forEach(c => {
-          const v = c.val();
-          dateCounts[v.date || '(日付なし)'] = (dateCounts[v.date || '(日付なし)'] || 0) + 1;
-        });
-        const total = Object.values(dateCounts).reduce((a,b)=>a+b,0);
-        lines.push(`${p.label}: ${total}件`);
-        Object.entries(dateCounts).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,7).forEach(([d,n])=>{
-          lines.push(`  ${d}: ${n}件`);
+        const recs = [];
+        snap.forEach(c => { recs.push({key: c.key, ...c.val()}); });
+        lines.push(`${type}: ${recs.length}件`);
+        // 直近5件を詳細表示
+        recs.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,5).forEach(r => {
+          lines.push(`  [${r.date}] ${r.time||'?'} key:${(r.key||'').slice(0,8)}`);
         });
       }
     }
   } catch(e) {
-    lines.push(`エラー: ${e.message}`);
+    lines.push(`Firebaseエラー: ${e.message}`);
   }
 
+  // キャッシュ状態
+  lines.push('');
+  lines.push(`=== メモリキャッシュ ===`);
+  lines.push(`todayMeal: ${state.todayMeal.length}件`);
+  lines.push(`todayStool: ${state.todayStool.length}件`);
+  lines.push(`cachedAll: ${hState.cachedAll ? `meals:${hState.cachedAll.meals.length} stools:${hState.cachedAll.stools.length}` : 'null'}`);
+
   content.textContent = lines.join('\n');
+}
+
+// 保存直後に呼ぶ簡易確認（saveStool/confirmSaveMealから内部的に使用）
+async function _verifySaveInFirebase(type, expectedDate) {
+  try {
+    const uid = state.viewingUserId || state.userId;
+    const fc = state.familyCode;
+    const snap = await db.ref(`families/${fc}/records/${uid}/${type}`).once('value');
+    if (!snap.exists()) {
+      console.warn(`[verify] ${type} 0件 - Firebaseにデータが見つかりません`);
+      return false;
+    }
+    let found = false;
+    snap.forEach(c => { if (c.val().date === expectedDate) found = true; });
+    console.log(`[verify] ${type} date=${expectedDate}: ${found ? '✅ Firebase確認OK' : '❌ 該当日付なし'}`);
+    return found;
+  } catch(e) {
+    console.warn('[verify] 確認エラー:', e.message);
+    return false;
+  }
 }
 
 function showHistoryView(view, reload=true) {
