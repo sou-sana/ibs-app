@@ -1611,8 +1611,7 @@ async function saveStool() {
   try {
     const saveUid = state.viewingUserId || state.userId;
     // onComplete コールバックでサーバー到達を確認してから成功とみなす
-    await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/stools`, record);
-    // 1秒後にFirebaseに実際に入っているか検証（コンソールに結果を出力）
+    const stoolKey = await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/stools`, record);
     setTimeout(() => _verifySaveInFirebase('stools', recordDate), 1000);
     state.selectedStoolType = null;
     document.querySelectorAll('#stool-form .stool-btn').forEach(b => b.classList.remove('selected'));
@@ -1620,7 +1619,11 @@ async function saveStool() {
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
     document.getElementById('stool-date').value = todayStr(); // 日付を今日にリセット
-    hState.cachedAll = null; // 履歴キャッシュをリセット（次回履歴を開いたとき最新取得）
+    // キャッシュを null にせず直接追加（null にすると renderYesterdayCard が
+    // 即座に loadAllHistoryRecords を呼んで古いデータを掴む競合が起きる）
+    if (hState.cachedAll) {
+      hState.cachedAll.stools = [...hState.cachedAll.stools, {id: stoolKey || 'tmp', ...record}];
+    }
     if (recordDate === todayStr()) {
       showToast('便を記録しました');
       openTab('home', true);
@@ -1746,7 +1749,7 @@ async function confirmSaveMeal() {
   try {
     const saveUid = state.viewingUserId || state.userId;
     // onComplete コールバックでサーバー到達を確認してから成功とみなす
-    await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/meals`, record);
+    const mealKey = await pushWithServerConfirm(`families/${state.familyCode}/records/${saveUid}/meals`, record);
     setTimeout(() => _verifySaveInFirebase('meals', recordDate), 1000);
     state.selectedMealType = null;
     document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('selected'));
@@ -1756,7 +1759,10 @@ async function confirmSaveMeal() {
     document.getElementById('meal-date').value = todayStr();
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
-    hState.cachedAll = null;
+    // キャッシュを直接更新（null にせず競合回避）
+    if (hState.cachedAll) {
+      hState.cachedAll.meals = [...hState.cachedAll.meals, {id: mealKey || 'tmp', ...record}];
+    }
     if (recordDate === todayStr()) {
       showToast('食事を記録しました ✅');
       openTab('home', true);
@@ -2124,22 +2130,43 @@ function setupRealtimeListeners() {
   if (!uid || !fc) return;
 
   // クエリなしで全件取得→ローカルで今日分フィルタ（インデックス依存を排除）
+  // スナップショットには全件入っているので hState.cachedAll も同時に更新し、
+  // キャッシュが常に最新になるようにする。
   db.ref(`families/${fc}/records/${uid}/meals`).on('value', snap => {
     const today = todayStr();
     state.todayMeal = [];
-    if (snap.exists()) snap.forEach(c => { const v = c.val(); if (v.date === today) state.todayMeal.push({id:c.key,...v}); });
+    const allMeals = [];
+    if (snap.exists()) snap.forEach(c => {
+      const v = c.val();
+      allMeals.push({id:c.key,...v});
+      if (v.date === today) state.todayMeal.push({id:c.key,...v});
+    });
+    // キャッシュが存在する場合は meals 部分を最新スナップショットで置き換える
+    if (hState.cachedAll) hState.cachedAll.meals = allMeals;
     renderHomeFromState();
   });
   db.ref(`families/${fc}/records/${uid}/stools`).on('value', snap => {
     const today = todayStr();
     state.todayStool = [];
-    if (snap.exists()) snap.forEach(c => { const v = c.val(); if (v.date === today) state.todayStool.push({id:c.key,...v}); });
+    const allStools = [];
+    if (snap.exists()) snap.forEach(c => {
+      const v = c.val();
+      allStools.push({id:c.key,...v});
+      if (v.date === today) state.todayStool.push({id:c.key,...v});
+    });
+    if (hState.cachedAll) hState.cachedAll.stools = allStools;
     renderHomeFromState();
   });
   db.ref(`families/${fc}/records/${uid}/symptoms`).on('value', snap => {
     const today = todayStr();
     state.todaySym = [];
-    if (snap.exists()) snap.forEach(c => { const v = c.val(); if (v.date === today) state.todaySym.push({id:c.key,...v}); });
+    const allSymptoms = [];
+    if (snap.exists()) snap.forEach(c => {
+      const v = c.val();
+      allSymptoms.push({id:c.key,...v});
+      if (v.date === today) state.todaySym.push({id:c.key,...v});
+    });
+    if (hState.cachedAll) hState.cachedAll.symptoms = allSymptoms;
     renderHomeFromState();
   });
 }
@@ -2272,11 +2299,14 @@ async function loadAllHistoryRecords() {
   const fc = state.familyCode;
   if (!uid || !fc) { hState.cachedAll = { symptoms:[], meals:[], stools:[] }; return; }
   try {
-    // Firebase キャッシュを避けるため once() を使用し、Promise で解決
+    // .get() を使用してサーバーから必ず最新データを取得する
+    // .once('value') は .on() リスナーのローカルキャッシュを返す場合があり、
+    // ライト直後などにキャッシュが古いデータを保持している場合に失敗する。
+    // .get() は常にサーバーに問い合わせるため確実。
     const [ss, ms, ts] = await Promise.all([
-      db.ref(`families/${fc}/records/${uid}/symptoms`).once('value'),
-      db.ref(`families/${fc}/records/${uid}/meals`).once('value'),
-      db.ref(`families/${fc}/records/${uid}/stools`).once('value')
+      db.ref(`families/${fc}/records/${uid}/symptoms`).get(),
+      db.ref(`families/${fc}/records/${uid}/meals`).get(),
+      db.ref(`families/${fc}/records/${uid}/stools`).get()
     ]);
     const symptoms = [], meals = [], stools = [];
     if (ss.exists()) ss.forEach(c => symptoms.push({id:c.key,...c.val()}));
@@ -2350,7 +2380,7 @@ async function showDiagnostic() {
   try {
     lines.push(`=== Firebase内データ ===`);
     for (const type of ['meals','stools']) {
-      const snap = await db.ref(`families/${fc}/records/${readUid}/${type}`).once('value');
+      const snap = await db.ref(`families/${fc}/records/${readUid}/${type}`).get();
       if (!snap.exists()) {
         lines.push(`${type}: 0件`);
       } else {
@@ -2382,7 +2412,7 @@ async function _verifySaveInFirebase(type, expectedDate) {
   try {
     const uid = state.viewingUserId || state.userId;
     const fc = state.familyCode;
-    const snap = await db.ref(`families/${fc}/records/${uid}/${type}`).once('value');
+    const snap = await db.ref(`families/${fc}/records/${uid}/${type}`).get();
     if (!snap.exists()) {
       console.warn(`[verify] ${type} 0件 - Firebaseにデータが見つかりません`);
       return false;
@@ -2558,9 +2588,14 @@ function setTimelineToday() {
 function changeTimelineDate(delta) {
   const el = document.getElementById('timeline-date');
   if (!el) return;
-  const d = new Date(el.value || todayStr());
-  d.setDate(d.getDate() + delta);
-  el.value = d.toISOString().split('T')[0];
+  // new Date('YYYY-MM-DD') は UTC として解釈されるため、タイムゾーンにより
+  // 日付がずれる。年・月・日を分解してローカル時刻で構築することで回避する。
+  const cur = el.value || todayStr();
+  const [y, m, d] = cur.split('-').map(Number);
+  const date = new Date(y, m - 1, d); // ローカル時刻
+  date.setDate(date.getDate() + delta);
+  el.value = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  hState._autoReloaded = false; // 日付変更時はキャッシュ再取得フラグをリセット
   renderTimeline();
 }
 
@@ -2597,7 +2632,17 @@ function renderTimeline() {
     meals_src    = hState.cachedAll.meals.filter(r => r.date === dateStr);
     stools_src   = hState.cachedAll.stools.filter(r => r.date === dateStr);
     symptoms_src = hState.cachedAll.symptoms.filter(r => r.date === dateStr);
+    // キャッシュが古くて記録が見つからない場合 → Firebase から再取得（1回のみ）
+    // 診断で判明: FirebaseにデータがあるのにcachedAllが古いデータを保持する場合がある
+    if (meals_src.length === 0 && stools_src.length === 0 && symptoms_src.length === 0
+        && !hState._autoReloaded) {
+      hState._autoReloaded = true;
+      hState.cachedAll = null;
+      loadAllHistoryRecords().then(() => renderTimeline());
+      return;
+    }
   }
+  hState._autoReloaded = false;
 
   let all = [];
   if (f==='all'||f==='meal')    all = all.concat(meals_src.map(r=>({...r,_type:'meal'})));
