@@ -1619,11 +1619,9 @@ async function saveStool() {
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
     document.getElementById('stool-date').value = todayStr(); // 日付を今日にリセット
-    // キャッシュを null にせず直接追加（null にすると renderYesterdayCard が
-    // 即座に loadAllHistoryRecords を呼んで古いデータを掴む競合が起きる）
-    if (hState.cachedAll) {
-      hState.cachedAll.stools = [...hState.cachedAll.stools, {id: stoolKey || 'tmp', ...record}];
-    }
+    // キャッシュを無効化して次の履歴表示時に .get() で全件再取得させる
+    // （loadAllHistoryRecords が .get() になったため、stale cache の心配なし）
+    hState.cachedAll = null;
     if (recordDate === todayStr()) {
       showToast('便を記録しました');
       openTab('home', true);
@@ -1759,10 +1757,8 @@ async function confirmSaveMeal() {
     document.getElementById('meal-date').value = todayStr();
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
-    // キャッシュを直接更新（null にせず競合回避）
-    if (hState.cachedAll) {
-      hState.cachedAll.meals = [...hState.cachedAll.meals, {id: mealKey || 'tmp', ...record}];
-    }
+    // キャッシュを無効化して次の履歴表示時に .get() で全件再取得させる
+    hState.cachedAll = null;
     if (recordDate === todayStr()) {
       showToast('食事を記録しました ✅');
       openTab('home', true);
