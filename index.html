@@ -2280,6 +2280,10 @@ async function deleteRecord(type, id) {
 // =========================================================
 // HISTORY — 3-VIEW SYSTEM
 // =========================================================
+// loadAllHistoryRecords の呼び出し順序管理
+// 複数の呼び出しが並走したとき、古い呼び出しの結果が新しい結果を上書きするのを防ぐ
+let _loadHistoryCallId = 0;
+
 let hState = {
   view: 'timeline',
   calYear: new Date().getFullYear(),
@@ -2294,29 +2298,39 @@ async function loadAllHistoryRecords() {
   const uid = state.viewingUserId || state.userId;
   const fc = state.familyCode;
   if (!uid || !fc) { hState.cachedAll = { symptoms:[], meals:[], stools:[] }; return; }
+
+  // 呼び出しごとにIDを発行し、完了時に「最新の呼び出し」かチェックする。
+  // 複数の呼び出しが並走した場合、古い呼び出しの結果が新しい結果を上書きするのを防ぐ。
+  const myCallId = ++_loadHistoryCallId;
+
   try {
     // .get() を使用してサーバーから必ず最新データを取得する
-    // .once('value') は .on() リスナーのローカルキャッシュを返す場合があり、
-    // ライト直後などにキャッシュが古いデータを保持している場合に失敗する。
-    // .get() は常にサーバーに問い合わせるため確実。
     const [ss, ms, ts] = await Promise.all([
       db.ref(`families/${fc}/records/${uid}/symptoms`).get(),
       db.ref(`families/${fc}/records/${uid}/meals`).get(),
       db.ref(`families/${fc}/records/${uid}/stools`).get()
     ]);
+
+    // 完了した時点で「最新の呼び出し」でなければ破棄（古い結果で上書きしない）
+    if (myCallId !== _loadHistoryCallId) {
+      console.log('[loadAllHistoryRecords] 古い呼び出し結果を破棄 id:', myCallId, '< latest:', _loadHistoryCallId);
+      return;
+    }
+
     const symptoms = [], meals = [], stools = [];
     if (ss.exists()) ss.forEach(c => symptoms.push({id:c.key,...c.val()}));
     if (ms.exists()) ms.forEach(c => meals.push({id:c.key,...c.val()}));
     if (ts.exists()) ts.forEach(c => stools.push({id:c.key,...c.val()}));
     hState.cachedAll = { symptoms, meals, stools };
-    console.log('[loadAllHistoryRecords] uid=', uid, '| meals:', meals.length, '| stools:', stools.length, '| symptoms:', symptoms.length);
-    // 日付別件数をコンソールに出力（デバッグ用）
+    console.log('[loadAllHistoryRecords] id:', myCallId, '| meals:', meals.length, '| stools:', stools.length, '| symptoms:', symptoms.length);
     const dateCounts = {};
     [...meals, ...stools, ...symptoms].forEach(r => { dateCounts[r.date] = (dateCounts[r.date]||0)+1; });
     console.log('[loadAllHistoryRecords] 日付別件数:', JSON.stringify(dateCounts));
   } catch(e) {
     console.error('[loadAllHistoryRecords] エラー:', e);
-    hState.cachedAll = { symptoms:[], meals:[], stools:[] };
+    if (myCallId === _loadHistoryCallId) {
+      hState.cachedAll = { symptoms:[], meals:[], stools:[] };
+    }
   }
 }
 
