@@ -1619,9 +1619,8 @@ async function saveStool() {
     document.getElementById('stool-notes').value = '';
     document.getElementById('stool-time').value = '';
     document.getElementById('stool-date').value = todayStr(); // 日付を今日にリセット
-    // キャッシュを無効化して次の履歴表示時に .get() で全件再取得させる
-    // （loadAllHistoryRecords が .get() になったため、stale cache の心配なし）
-    hState.cachedAll = null;
+    // cachedAll はリアルタイムリスナーが自動更新するため、null にしない
+    // （null にすると loadAllHistoryRecords が古いタイミングで走って逆に汚染される）
     if (recordDate === todayStr()) {
       showToast('便を記録しました');
       openTab('home', true);
@@ -1757,8 +1756,7 @@ async function confirmSaveMeal() {
     document.getElementById('meal-date').value = todayStr();
     document.getElementById('fodmap-preview').classList.add('hidden');
     document.getElementById('photo-preview-area').classList.add('hidden');
-    // キャッシュを無効化して次の履歴表示時に .get() で全件再取得させる
-    hState.cachedAll = null;
+    // cachedAll はリアルタイムリスナーが自動更新するため、null にしない
     if (recordDate === todayStr()) {
       showToast('食事を記録しました ✅');
       openTab('home', true);
@@ -2137,8 +2135,10 @@ function setupRealtimeListeners() {
       allMeals.push({id:c.key,...v});
       if (v.date === today) state.todayMeal.push({id:c.key,...v});
     });
-    // キャッシュが存在する場合は meals 部分を最新スナップショットで置き換える
-    if (hState.cachedAll) hState.cachedAll.meals = allMeals;
+    // リスナーは常に全件スナップショットを持つ → cachedAll の唯一の真実の源として扱う
+    // null でも必ず初期化・更新することで、loadAllHistoryRecords のタイミング問題を回避
+    if (!hState.cachedAll) hState.cachedAll = { symptoms: [], meals: [], stools: [] };
+    hState.cachedAll.meals = allMeals;
     renderHomeFromState();
   });
   db.ref(`families/${fc}/records/${uid}/stools`).on('value', snap => {
@@ -2150,7 +2150,8 @@ function setupRealtimeListeners() {
       allStools.push({id:c.key,...v});
       if (v.date === today) state.todayStool.push({id:c.key,...v});
     });
-    if (hState.cachedAll) hState.cachedAll.stools = allStools;
+    if (!hState.cachedAll) hState.cachedAll = { symptoms: [], meals: [], stools: [] };
+    hState.cachedAll.stools = allStools;
     renderHomeFromState();
   });
   db.ref(`families/${fc}/records/${uid}/symptoms`).on('value', snap => {
@@ -2162,7 +2163,8 @@ function setupRealtimeListeners() {
       allSymptoms.push({id:c.key,...v});
       if (v.date === today) state.todaySym.push({id:c.key,...v});
     });
-    if (hState.cachedAll) hState.cachedAll.symptoms = allSymptoms;
+    if (!hState.cachedAll) hState.cachedAll = { symptoms: [], meals: [], stools: [] };
+    hState.cachedAll.symptoms = allSymptoms;
     renderHomeFromState();
   });
 }
