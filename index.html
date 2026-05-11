@@ -1171,6 +1171,32 @@ async function joinFamily() {
   try {
     const snap = await db.ref(`families/${code}`).get();
     if (!snap.exists()) { showSetupError('コードが見つかりません'); return; }
+
+    // ログアウト後の再参加時に同じ名前のメンバーが存在すれば、
+    // そのメンバーの userId を引き継ぐ（記録を失わないため）
+    const membersSnap = await db.ref(`families/${code}/members`).get();
+    if (membersSnap.exists()) {
+      let resumeUid = null;
+      membersSnap.forEach(c => {
+        const m = c.val();
+        if (m.userName === state.userName && c.key !== state.userId) {
+          resumeUid = c.key;
+        }
+      });
+      if (resumeUid) {
+        // 既存メンバーのアカウントを引き継ぎ
+        const oldMember = membersSnap.child(resumeUid).val();
+        state.userId = resumeUid;
+        state.userRole = oldMember.userRole || state.selectedRole;
+        state.familyCode = code;
+        saveSession();
+        showToast('✅ 以前の記録を引き継ぎました');
+        showMain();
+        return;
+      }
+    }
+
+    // 新規メンバーとして登録
     await db.ref(`families/${code}/members/${state.userId}`).set({
       userId: state.userId, userName: state.userName, userRole: state.userRole,
       joinedAt: new Date().toISOString()
