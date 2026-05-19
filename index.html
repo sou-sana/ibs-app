@@ -10,294 +10,254 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif; background: #f1f5f9; color: #1e293b; overscroll-behavior: none; }
 
-    /* ── HEADER ── */
     .app-header {
       position: sticky; top: 0; z-index: 50;
       background: white; border-bottom: 1px solid #e2e8f0;
-      padding: 14px 16px;
-      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
     }
-    .app-logo { font-size: 18px; font-weight: 800; color: #10b981; }
-    .app-date { font-size: 12px; color: #94a3b8; }
+    .app-logo { font-size: 17px; font-weight: 800; color: #10b981; }
+    .app-date  { font-size: 12px; color: #94a3b8; }
 
-    /* ── BOTTOM NAV ── */
+    /* ── BOTTOM NAV（4タブ） ── */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: white; border-top: 1px solid #e2e8f0; z-index: 100;
-      padding-bottom: env(safe-area-inset-bottom);
-      display: flex;
+      padding-bottom: env(safe-area-inset-bottom); display: flex;
     }
     .nav-btn {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; padding: 8px 0; gap: 3px;
-      cursor: pointer; color: #94a3b8;
-      border: none; background: none; font-size: 10px; font-weight: 600;
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 7px 0; gap: 2px; cursor: pointer; color: #94a3b8;
+      border: none; background: none; font-size: 9px; font-weight: 700;
       transition: color .15s;
     }
     .nav-btn.active { color: #10b981; }
-    .nav-btn svg { width: 22px; height: 22px; }
+    .nav-btn svg { width: 20px; height: 20px; }
 
-    /* ── TABS ── */
-    .tab-panel { display: none; padding-bottom: 90px; min-height: calc(100vh - 60px); }
+    .tab-panel { display: none; padding-bottom: 85px; min-height: calc(100vh - 56px); }
     .tab-panel.active { display: block; }
 
-    /* ── CARDS ── */
     .card {
-      background: white; border-radius: 16px;
-      padding: 16px; margin: 10px 12px 0;
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      background: white; border-radius: 16px; padding: 14px;
+      margin: 10px 12px 0; box-shadow: 0 1px 4px rgba(0,0,0,.07);
     }
-    .card-title {
-      font-size: 11px; font-weight: 700;
-      color: #94a3b8; letter-spacing: .5px;
-      text-transform: uppercase; margin-bottom: 12px;
-    }
+    .card-title { font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 10px; }
 
-    /* ── STAT ROW ── */
     .stat-row { display: flex; gap: 8px; margin: 10px 12px 0; }
-    .stat-box {
-      flex: 1; background: white; border-radius: 14px;
-      padding: 12px 8px; text-align: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
-    }
-    .stat-box .val { font-size: 26px; font-weight: 800; line-height: 1; }
-    .stat-box .lbl { font-size: 10px; color: #94a3b8; margin-top: 4px; font-weight: 600; }
+    .stat-box { flex: 1; background: white; border-radius: 14px; padding: 10px 6px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .stat-box .val { font-size: 24px; font-weight: 800; line-height: 1; }
+    .stat-box .lbl { font-size: 9px; color: #94a3b8; margin-top: 4px; font-weight: 600; }
 
-    /* ── RECORD BUTTONS ── */
     .rec-btn-row { display: flex; gap: 10px; margin: 10px 12px 0; }
     .rec-btn {
-      flex: 1; display: flex; align-items: center; gap: 10px;
-      padding: 14px; background: white;
-      border: 2px solid #e2e8f0; border-radius: 16px;
-      cursor: pointer; font-size: 14px; font-weight: 700;
-      color: #374151; transition: all .15s;
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      flex: 1; display: flex; align-items: center; gap: 8px;
+      padding: 13px 12px; background: white; border: 2px solid #e2e8f0;
+      border-radius: 14px; cursor: pointer; font-size: 13px; font-weight: 700;
+      color: #374151; transition: all .15s; box-shadow: 0 1px 4px rgba(0,0,0,.07);
     }
     .rec-btn:active { transform: scale(.97); }
     .rec-btn.meal  { border-color: #10b981; }
     .rec-btn.stool { border-color: #8b5cf6; }
-    .rec-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-    }
+    .rec-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
     .meal-icon-bg  { background: #d1fae5; }
     .stool-icon-bg { background: #ede9fe; }
 
-    /* ── RECORD LIST ── */
-    .rec-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 10px 0; border-bottom: 1px solid #f1f5f9;
-    }
+    .rec-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f1f5f9; }
     .rec-item:last-child { border-bottom: none; }
-    .rec-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .rec-dot  { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
     .dot-meal  { background: #10b981; }
     .dot-stool { background: #8b5cf6; }
-    .rec-time { font-size: 12px; color: #94a3b8; width: 38px; flex-shrink: 0; font-weight: 600; }
+    .rec-time { font-size: 12px; color: #94a3b8; width: 36px; flex-shrink: 0; font-weight: 600; }
     .rec-name { font-size: 14px; font-weight: 600; color: #1e293b; }
-    .rec-sub  { font-size: 12px; color: #64748b; margin-top: 2px; }
-    .del-btn {
-      margin-left: auto; padding: 4px 8px;
-      border: 1px solid #fee2e2; border-radius: 8px;
-      background: white; color: #ef4444;
-      font-size: 11px; cursor: pointer; flex-shrink: 0;
-    }
+    .rec-sub  { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .del-btn  { margin-left: auto; padding: 4px 8px; border: 1px solid #fee2e2; border-radius: 8px; background: white; color: #ef4444; font-size: 11px; cursor: pointer; flex-shrink: 0; }
     .del-btn:active { background: #fee2e2; }
 
-    /* ── BADGES ── */
     .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
     .badge-low  { background: #d1fae5; color: #065f46; }
     .badge-mid  { background: #fef3c7; color: #92400e; }
     .badge-high { background: #fee2e2; color: #991b1b; }
 
-    /* ── MODALS ── */
-    .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.45); z-index: 200;
-      display: none; align-items: flex-end;
-    }
+    /* ── MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: none; align-items: flex-end; }
     .modal-overlay.open { display: flex; }
     .modal-sheet {
-      background: white; border-radius: 24px 24px 0 0;
+      background: white; border-radius: 22px 22px 0 0;
       width: 100%; max-height: 92vh; overflow-y: auto;
-      padding: 20px 16px calc(env(safe-area-inset-bottom) + 28px);
+      padding: 18px 16px calc(env(safe-area-inset-bottom) + 24px);
     }
-    .modal-handle { width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 20px; }
-    .modal-title  { font-size: 17px; font-weight: 800; margin-bottom: 20px; }
+    .modal-handle { width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 18px; }
+    .modal-title  { font-size: 17px; font-weight: 800; margin-bottom: 16px; }
 
-    /* ── FORM ── */
-    .form-label {
-      font-size: 11px; font-weight: 700; color: #64748b;
-      letter-spacing: .5px; margin-bottom: 8px; margin-top: 16px; display: block;
-    }
+    .form-label { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: .5px; margin-bottom: 7px; margin-top: 14px; display: block; }
     .form-input {
-      width: 100%; padding: 12px 14px;
-      border: 1.5px solid #e2e8f0; border-radius: 12px;
+      width: 100%; padding: 12px 13px; border: 1.5px solid #e2e8f0; border-radius: 12px;
       font-size: 16px; outline: none; transition: border-color .15s;
       color: #1e293b; font-family: inherit; background: white;
     }
     .form-input:focus { border-color: #10b981; }
 
-    /* ── FODMAP SELECTOR ── */
-    .fodmap-row { display: flex; gap: 6px; align-items: stretch; }
-    .fodmap-input-wrap { flex: 1; }
-    .fodmap-lvl-wrap { display: flex; gap: 4px; }
-    .fodmap-btn {
-      padding: 12px 10px; border: 2px solid #e2e8f0; border-radius: 12px;
-      font-size: 13px; font-weight: 800; cursor: pointer;
-      background: white; transition: all .15s; color: #cbd5e1;
-      white-space: nowrap;
+    /* ── AUTOCOMPLETE ── */
+    .suggest-wrap { position: relative; }
+    .suggest-list {
+      position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+      background: white; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      z-index: 50; max-height: 200px; overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,.1); display: none;
     }
+    .suggest-list.open { display: block; }
+    .suggest-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9;
+      font-size: 14px; font-weight: 600;
+    }
+    .suggest-item:last-child { border-bottom: none; }
+    .suggest-item:active { background: #f8fafc; }
+
+    /* ── FODMAP BUTTONS ── */
+    .fodmap-sel { display: flex; gap: 6px; }
+    .fodmap-btn {
+      flex: 1; padding: 11px 4px; border: 2px solid #e2e8f0; border-radius: 12px;
+      font-size: 14px; font-weight: 800; cursor: pointer; text-align: center;
+      background: white; transition: all .15s; color: #cbd5e1; font-family: inherit;
+    }
+    .fodmap-btn .sub { font-size: 9px; font-weight: 600; display: block; margin-top: 2px; }
     .fodmap-btn.low.sel  { border-color: #10b981; background: #d1fae5; color: #065f46; }
     .fodmap-btn.mid.sel  { border-color: #f59e0b; background: #fef3c7; color: #92400e; }
     .fodmap-btn.high.sel { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
+
     .add-food-btn {
       padding: 12px 14px; background: #10b981; color: white;
-      border: none; border-radius: 12px; font-size: 20px; font-weight: 700;
+      border: none; border-radius: 12px; font-size: 18px; font-weight: 700;
       cursor: pointer; flex-shrink: 0; line-height: 1;
     }
     .add-food-btn:active { opacity: .85; }
 
-    /* ── FOOD ITEMS LIST ── */
-    .food-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    /* ── FOOD ITEMS LIST (meal modal) ── */
+    .food-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
     .food-item {
       display: flex; align-items: center; gap: 8px;
       background: #f8fafc; border-radius: 10px; padding: 8px 10px;
     }
     .food-item-name { flex: 1; font-size: 13px; font-weight: 600; }
-    .food-item-del {
-      background: none; border: none; color: #94a3b8;
-      font-size: 16px; cursor: pointer; padding: 0 2px;
-    }
-    .fodmap-hint {
-      font-size: 11px; color: #94a3b8; margin-top: 8px; line-height: 1.6;
-      background: #f8fafc; border-radius: 10px; padding: 8px 10px;
-    }
+    .food-item-del  { background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer; padding: 0 2px; }
+
+    .fodmap-hint { font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.6; background: #f8fafc; border-radius: 10px; padding: 8px 10px; }
+    .save-to-dict-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; background: #f0fdf4; border-radius: 10px; }
+    .save-to-dict-row label { font-size: 12px; color: #065f46; font-weight: 600; cursor: pointer; }
 
     /* ── BRISTOL ── */
     .bristol-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    .bristol-item {
-      padding: 8px 2px; border: 2px solid #e2e8f0; border-radius: 10px;
-      text-align: center; cursor: pointer; transition: all .15s; background: white;
-    }
+    .bristol-item { padding: 7px 2px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; transition: all .15s; background: white; }
     .bristol-item:active { transform: scale(.95); }
     .bristol-item.sel { border-color: #8b5cf6; background: #ede9fe; }
-    .bristol-item .b-em  { font-size: 18px; line-height: 1; }
-    .bristol-item .b-num { font-size: 14px; font-weight: 800; margin-top: 2px; }
-    .bristol-item .b-lbl { font-size: 8px; color: #94a3b8; line-height: 1.2; margin-top: 2px; }
+    .bristol-item .b-em  { font-size: 16px; line-height: 1; }
+    .bristol-item .b-num { font-size: 13px; font-weight: 800; margin-top: 2px; }
+    .bristol-item .b-lbl { font-size: 8px; color: #94a3b8; line-height: 1.2; margin-top: 1px; }
     .bristol-item.sel .b-lbl { color: #7c3aed; }
-    .bristol-desc { font-size: 12px; color: #64748b; margin-top: 8px; min-height: 32px; text-align: center; }
+    .bristol-desc { font-size: 12px; color: #64748b; margin-top: 7px; min-height: 30px; text-align: center; }
 
-    /* ── PAIN ── */
-    .pain-sel { display: flex; gap: 6px; }
+    .pain-sel { display: flex; gap: 5px; }
     .pain-btn {
       flex: 1; padding: 10px 4px; border: 2px solid #e2e8f0; border-radius: 12px;
-      font-size: 12px; font-weight: 700; cursor: pointer;
-      text-align: center; background: white; transition: all .15s; color: #cbd5e1;
+      font-size: 11px; font-weight: 700; cursor: pointer; text-align: center;
+      background: white; transition: all .15s; color: #cbd5e1; font-family: inherit;
     }
     .pain-btn.sel { border-color: #8b5cf6; background: #ede9fe; color: #6d28d9; }
 
-    /* ── BUTTONS ── */
     .save-btn {
-      width: 100%; padding: 15px; background: #10b981; color: white;
+      width: 100%; padding: 14px; background: #10b981; color: white;
       border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
-      cursor: pointer; margin-top: 20px; transition: all .15s; font-family: inherit;
+      cursor: pointer; margin-top: 18px; transition: all .15s; font-family: inherit;
     }
     .save-btn:active { transform: scale(.98); opacity: .9; }
-    .save-btn.stool  { background: #8b5cf6; }
-    .save-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
-    .cancel-btn {
-      width: 100%; padding: 12px; background: none;
-      border: none; color: #94a3b8; font-size: 14px;
-      cursor: pointer; margin-top: 8px; font-family: inherit;
-    }
+    .save-btn.stool { background: #8b5cf6; }
+    .cancel-btn { width: 100%; padding: 12px; background: none; border: none; color: #94a3b8; font-size: 14px; cursor: pointer; margin-top: 6px; font-family: inherit; }
 
     /* ── WEEK STRIP ── */
-    .week-strip {
-      display: flex; gap: 6px; padding: 10px 12px;
-      overflow-x: auto; -webkit-overflow-scrolling: touch;
-    }
+    .week-strip { display: flex; gap: 6px; padding: 10px 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .week-strip::-webkit-scrollbar { display: none; }
-    .week-day {
-      flex-shrink: 0; width: 42px; padding: 8px 4px;
-      border-radius: 12px; border: 2px solid #e2e8f0;
-      text-align: center; cursor: pointer; background: white; transition: all .15s;
-    }
+    .week-day { flex-shrink: 0; width: 42px; padding: 7px 4px; border-radius: 12px; border: 2px solid #e2e8f0; text-align: center; cursor: pointer; background: white; transition: all .15s; }
     .week-day.active { border-color: #10b981; background: #ecfdf5; }
     .week-day .wd { font-size: 10px; color: #94a3b8; font-weight: 700; }
-    .week-day .dd { font-size: 16px; font-weight: 800; color: #1e293b; }
+    .week-day .dd { font-size: 15px; font-weight: 800; color: #1e293b; }
     .week-day.active .dd { color: #10b981; }
     .week-day .dot { width: 6px; height: 6px; border-radius: 50%; margin: 3px auto 0; }
 
     /* ── ADVICE ── */
-    .adv-card { border-radius: 14px; padding: 14px; margin: 8px 12px 0; }
+    .adv-card { border-radius: 14px; padding: 13px; margin: 8px 12px 0; }
     .adv-card.green  { background: linear-gradient(135deg,#ecfdf5,#d1fae5); border-left: 4px solid #10b981; }
     .adv-card.yellow { background: linear-gradient(135deg,#fffbeb,#fef3c7); border-left: 4px solid #f59e0b; }
     .adv-card.red    { background: linear-gradient(135deg,#fff1f2,#fee2e2); border-left: 4px solid #ef4444; }
     .adv-card.blue   { background: linear-gradient(135deg,#eff6ff,#dbeafe); border-left: 4px solid #3b82f6; }
     .adv-card.purple { background: linear-gradient(135deg,#f5f3ff,#ede9fe); border-left: 4px solid #8b5cf6; }
-    .adv-title { font-size: 13px; font-weight: 800; margin-bottom: 6px; }
+    .adv-title { font-size: 13px; font-weight: 800; margin-bottom: 5px; }
     .adv-body  { font-size: 13px; color: #475569; line-height: 1.7; }
 
-    /* ── EMPTY ── */
-    .empty { text-align: center; padding: 36px 20px; color: #94a3b8; }
-    .empty .em-icon { font-size: 36px; margin-bottom: 8px; }
+    /* ── FODMAP LIST TAB ── */
+    .dict-search-wrap { padding: 10px 12px 0; }
+    .dict-search { width: 100%; padding: 11px 13px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 15px; outline: none; font-family: inherit; background: white; }
+    .dict-search:focus { border-color: #10b981; }
+    .dict-section { margin: 10px 12px 0; }
+    .dict-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 6px 4px 6px;
+    }
+    .dict-item {
+      display: flex; align-items: center; gap: 10px;
+      background: white; border-radius: 12px; padding: 10px 12px; margin-bottom: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .dict-item-name { flex: 1; font-size: 14px; font-weight: 600; }
+    .dict-item-src  { font-size: 10px; color: #94a3b8; }
+    .dict-item-del  { background: none; border: none; color: #ef4444; font-size: 14px; cursor: pointer; padding: 4px; }
+    .add-dict-bar {
+      position: fixed; bottom: calc(env(safe-area-inset-bottom) + 56px); left: 12px; right: 12px;
+      background: white; border-radius: 16px; padding: 12px 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12); z-index: 90; display: none;
+    }
+    .add-dict-bar.open { display: block; }
+    .dict-add-btn {
+      position: fixed; bottom: calc(env(safe-area-inset-bottom) + 64px); right: 16px;
+      width: 50px; height: 50px; background: #10b981; color: white;
+      border: none; border-radius: 50%; font-size: 26px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16,185,129,.4); z-index: 91;
+      display: flex; align-items: center; justify-content: center; line-height: 1;
+    }
+
+    .empty { text-align: center; padding: 32px 20px; color: #94a3b8; }
+    .empty .em-icon { font-size: 34px; margin-bottom: 8px; }
     .empty .em-text { font-size: 13px; line-height: 1.6; }
 
-    /* ── TOAST ── */
-    .toast {
-      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-      background: #1e293b; color: white; padding: 10px 20px; border-radius: 99px;
-      font-size: 13px; z-index: 500; opacity: 0; transition: opacity .3s;
-      pointer-events: none; white-space: nowrap;
-    }
+    .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 99px; font-size: 13px; z-index: 500; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; }
 
-    /* ── DAY HEADER ── */
     .day-header { font-size: 14px; font-weight: 700; color: #374151; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="app-header">
   <div class="app-logo">🌿 IBSケア</div>
   <div class="app-date" id="header-date"></div>
 </div>
 
-<!-- ===== TAB: 今日 ===== -->
+<!-- ===== 今日 ===== -->
 <div id="tab-today" class="tab-panel active">
   <div class="stat-row">
-    <div class="stat-box">
-      <div class="val" style="color:#10b981" id="st-meal">0</div>
-      <div class="lbl">食事</div>
-    </div>
-    <div class="stat-box">
-      <div class="val" style="color:#8b5cf6" id="st-stool">0</div>
-      <div class="lbl">排便</div>
-    </div>
-    <div class="stat-box">
-      <div class="val" style="color:#ef4444" id="st-highfodmap">0</div>
-      <div class="lbl">高FODMAP</div>
-    </div>
+    <div class="stat-box"><div class="val" style="color:#10b981" id="st-meal">0</div><div class="lbl">食事</div></div>
+    <div class="stat-box"><div class="val" style="color:#8b5cf6" id="st-stool">0</div><div class="lbl">排便</div></div>
+    <div class="stat-box"><div class="val" style="color:#ef4444" id="st-highfodmap">0</div><div class="lbl">高FODMAP</div></div>
   </div>
   <div class="rec-btn-row">
-    <button class="rec-btn meal"  onclick="openMealModal()">
-      <div class="rec-icon meal-icon-bg">🥗</div><span>食事を記録</span>
-    </button>
-    <button class="rec-btn stool" onclick="openStoolModal()">
-      <div class="rec-icon stool-icon-bg">🚽</div><span>排便を記録</span>
-    </button>
+    <button class="rec-btn meal"  onclick="openMealModal()"><div class="rec-icon meal-icon-bg">🥗</div><span>食事を記録</span></button>
+    <button class="rec-btn stool" onclick="openStoolModal()"><div class="rec-icon stool-icon-bg">🚽</div><span>排便を記録</span></button>
   </div>
   <div class="card">
     <div class="card-title">今日の記録</div>
-    <div id="today-records">
-      <div class="empty"><div class="em-icon">📝</div><div class="em-text">まだ記録がありません</div></div>
-    </div>
+    <div id="today-records"><div class="empty"><div class="em-icon">📝</div><div class="em-text">まだ記録がありません</div></div></div>
   </div>
 </div>
 
-<!-- ===== TAB: 履歴 ===== -->
+<!-- ===== 履歴 ===== -->
 <div id="tab-history" class="tab-panel">
   <div class="week-strip" id="week-strip"></div>
   <div class="card" id="history-card">
@@ -305,69 +265,73 @@
   </div>
 </div>
 
-<!-- ===== TAB: アドバイス ===== -->
+<!-- ===== アドバイス ===== -->
 <div id="tab-advice" class="tab-panel">
-  <div style="padding:12px 16px 2px;font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.5px">
-    過去14日間のパターン分析
+  <div style="padding:12px 16px 2px;font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.5px">過去14日間のパターン分析</div>
+  <div id="advice-content"><div class="empty"><div class="em-icon">🔍</div><div class="em-text">記録が増えると自動で分析します<br>（食事・排便それぞれ3件以上）</div></div></div>
+</div>
+
+<!-- ===== 食品一覧 ===== -->
+<div id="tab-foods" class="tab-panel">
+  <div class="dict-search-wrap">
+    <input class="dict-search" id="dict-search" type="search" placeholder="🔍 食品を検索…" oninput="renderDictList()" autocomplete="off">
   </div>
-  <div id="advice-content">
-    <div class="empty">
-      <div class="em-icon">🔍</div>
-      <div class="em-text">記録が増えると自動で分析します<br>（食事・排便それぞれ3件以上）</div>
+  <div id="dict-list"></div>
+  <!-- 追加フォーム（フローティング） -->
+  <div class="add-dict-bar" id="add-dict-bar">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">➕ 食品をリストに追加</div>
+    <input class="form-input" id="dict-name-input" type="text" placeholder="食品名・料理名" autocomplete="off"
+      style="margin-bottom:8px" onkeydown="if(event.key==='Enter'){event.preventDefault();saveDictItem()}">
+    <div class="fodmap-sel" style="margin-bottom:10px">
+      <button class="fodmap-btn low"  id="dict-low"  onclick="selDictFodmap('low')"  style="font-family:inherit">低<span class="sub">安心</span></button>
+      <button class="fodmap-btn mid"  id="dict-mid"  onclick="selDictFodmap('mid')"  style="font-family:inherit">中<span class="sub">適量</span></button>
+      <button class="fodmap-btn high" id="dict-high" onclick="selDictFodmap('high')" style="font-family:inherit">高<span class="sub">注意</span></button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeDictBar()" style="flex:1;padding:11px;border:1.5px solid #e2e8f0;border-radius:12px;background:white;font-size:14px;cursor:pointer;font-family:inherit;color:#64748b">キャンセル</button>
+      <button onclick="saveDictItem()" style="flex:2;padding:11px;background:#10b981;color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">追加する</button>
     </div>
   </div>
+  <!-- フローティング追加ボタン -->
+  <button class="dict-add-btn" id="dict-fab" onclick="openDictBar()">＋</button>
 </div>
 
 <!-- ===== BOTTOM NAV ===== -->
 <div class="bottom-nav">
-  <button class="nav-btn active" id="nav-today" onclick="switchTab('today')">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-    </svg>今日
+  <button class="nav-btn active" id="nav-today"   onclick="switchTab('today')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>今日
   </button>
   <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-    </svg>履歴
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>履歴
   </button>
-  <button class="nav-btn" id="nav-advice" onclick="switchTab('advice')">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-    </svg>アドバイス
+  <button class="nav-btn" id="nav-advice"  onclick="switchTab('advice')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>提案
+  </button>
+  <button class="nav-btn" id="nav-foods"   onclick="switchTab('foods')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>食品
   </button>
 </div>
 
-<!-- ===== MEAL MODAL ===== -->
+<!-- ===== 食事モーダル ===== -->
 <div class="modal-overlay" id="meal-modal">
   <div class="modal-sheet" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-title">🥗 食事を記録</div>
 
-    <label class="form-label" style="margin-top:0">食品を追加</label>
-    <!-- 食品名 + FODMAP + 追加ボタン -->
-    <div style="display:flex;gap:6px;align-items:flex-end">
-      <div style="flex:1">
-        <input class="form-input" id="food-input" type="text"
-          placeholder="例：玉ねぎ、ご飯…" autocomplete="off" autocorrect="off"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();addFoodItem()}">
-      </div>
-      <button class="add-food-btn" onclick="addFoodItem()" title="追加">＋</button>
+    <label class="form-label" style="margin-top:0">食品名・料理名</label>
+    <div class="suggest-wrap">
+      <input class="form-input" id="food-input" type="text"
+        placeholder="入力すると候補が出ます" autocomplete="off" autocorrect="off"
+        oninput="onFoodInput()"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addFoodItem()}">
+      <div class="suggest-list" id="suggest-list"></div>
     </div>
 
-    <!-- FODMAP選択 -->
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="fodmap-btn low"  id="fodmap-low"  onclick="selFodmap('low')" style="flex:1">
-        低<br><span style="font-size:9px;font-weight:600">安心</span>
-      </button>
-      <button class="fodmap-btn mid"  id="fodmap-mid"  onclick="selFodmap('mid')" style="flex:1">
-        中<br><span style="font-size:9px;font-weight:600">適量</span>
-      </button>
-      <button class="fodmap-btn high" id="fodmap-high" onclick="selFodmap('high')" style="flex:1">
-        高<br><span style="font-size:9px;font-weight:600">注意</span>
-      </button>
+    <label class="form-label">FODMAP レベル</label>
+    <div class="fodmap-sel">
+      <button class="fodmap-btn low"  id="fodmap-low"  onclick="selMealFodmap('low')"  style="font-family:inherit">低<span class="sub">安心</span></button>
+      <button class="fodmap-btn mid"  id="fodmap-mid"  onclick="selMealFodmap('mid')"  style="font-family:inherit">中<span class="sub">適量</span></button>
+      <button class="fodmap-btn high" id="fodmap-high" onclick="selMealFodmap('high')" style="font-family:inherit">高<span class="sub">注意</span></button>
     </div>
     <div class="fodmap-hint">
       <b style="color:#065f46">低</b>：米・肉・魚・卵・にんじん・ほうれん草など<br>
@@ -375,24 +339,38 @@
       <b style="color:#991b1b">高</b>：玉ねぎ・小麦・牛乳・りんご・ニンニクなど
     </div>
 
-    <!-- 追加済み食品リスト -->
+    <!-- 新規食品をリストに保存 -->
+    <div class="save-to-dict-row" id="save-to-dict-row" style="display:none">
+      <input type="checkbox" id="save-to-dict" checked style="width:16px;height:16px;accent-color:#10b981">
+      <label for="save-to-dict">この食品をFODMAP食品リストに追加する</label>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-top:12px;align-items:center">
+      <button class="add-food-btn" onclick="addFoodItem()">追加</button>
+      <span style="font-size:12px;color:#94a3b8">↑ 食品ごとに追加・複数OK</span>
+    </div>
+
+    <!-- 追加済み食品 -->
     <div id="food-list" class="food-list" style="display:none"></div>
 
     <label class="form-label">時刻</label>
-    <input class="form-input" id="meal-time" type="time">
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="form-input" id="meal-time" type="time" style="flex:1">
+      <button onclick="setNowTime('meal-time')" style="padding:12px 14px;background:#ecfdf5;border:1.5px solid #10b981;border-radius:12px;font-size:13px;font-weight:800;color:#10b981;cursor:pointer;white-space:nowrap;font-family:inherit">今</button>
+    </div>
 
-    <button class="save-btn" id="meal-save-btn" onclick="saveMeal()">記録する</button>
+    <button class="save-btn" onclick="saveMeal()">記録する</button>
     <button class="cancel-btn" onclick="closeMealModal()">キャンセル</button>
   </div>
 </div>
 
-<!-- ===== STOOL MODAL ===== -->
+<!-- ===== 排便モーダル ===== -->
 <div class="modal-overlay" id="stool-modal">
   <div class="modal-sheet" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-title">🚽 排便を記録</div>
 
-    <label class="form-label" style="margin-top:0">ブリストルスケール（便の形状）</label>
+    <label class="form-label" style="margin-top:0">ブリストルスケール</label>
     <div class="bristol-grid" id="bristol-grid"></div>
     <div class="bristol-desc" id="bristol-desc">タイプを選んでください</div>
 
@@ -405,7 +383,10 @@
     </div>
 
     <label class="form-label">時刻</label>
-    <input class="form-input" id="stool-time" type="time">
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="form-input" id="stool-time" type="time" style="flex:1">
+      <button onclick="setNowTime('stool-time')" style="padding:12px 14px;background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:12px;font-size:13px;font-weight:800;color:#8b5cf6;cursor:pointer;white-space:nowrap;font-family:inherit">今</button>
+    </div>
 
     <button class="save-btn stool" onclick="saveStool()">記録する</button>
     <button class="cancel-btn" onclick="closeStoolModal()">キャンセル</button>
@@ -435,136 +416,158 @@ const db = firebase.database();
 // ============================================================
 let userId = localStorage.getItem('ibs_uid');
 if (!userId) {
-  try {
-    const old = JSON.parse(localStorage.getItem('ibs_v2_session') || '{}');
-    if (old.userId) userId = old.userId;
-  } catch(e) {}
+  try { const o = JSON.parse(localStorage.getItem('ibs_v2_session')||'{}'); if (o.userId) userId = o.userId; } catch(e){}
   if (!userId) userId = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   localStorage.setItem('ibs_uid', userId);
 }
 
+// Firebase パス（旧アプリのセキュリティルールに合わせ families/ 以下を使用）
+function mealRef(id)  { return db.ref(`families/PRIVATE/records/${userId}/meals${id?'/'+id:''}`); }
+function stoolRef(id) { return db.ref(`families/PRIVATE/records/${userId}/stools${id?'/'+id:''}`); }
+function dictRef(id)  { return db.ref(`families/PRIVATE/dict/${userId}${id?'/'+id:''}`); }
+
 // ============================================================
-// CONSTANTS
+// 組み込みFODMAP辞書
 // ============================================================
-const BRISTOL = [
-  { num:1, emoji:'🔴', label:'コロコロ', desc:'タイプ1：硬くてコロコロした塊（重度の便秘）' },
-  { num:2, emoji:'🟠', label:'硬い',     desc:'タイプ2：ソーセージ状だが硬い（便秘）' },
-  { num:3, emoji:'🟡', label:'やや硬',   desc:'タイプ3：表面にひびのあるソーセージ状' },
-  { num:4, emoji:'🟢', label:'普通',     desc:'タイプ4：なめらかなソーセージ状（理想的）' },
-  { num:5, emoji:'🟡', label:'やや軟',   desc:'タイプ5：はっきりした塊の軟らかい便' },
-  { num:6, emoji:'🟠', label:'軟便',     desc:'タイプ6：ふわふわした不定形の軟便' },
-  { num:7, emoji:'🔴', label:'水様',     desc:'タイプ7：固形物のない水様便（下痢）' },
+const BUILTIN_DICT = [
+  // 低FODMAP
+  {name:'白米',fodmap:'low'},{name:'ご飯',fodmap:'low'},{name:'玄米',fodmap:'low'},
+  {name:'鶏肉',fodmap:'low'},{name:'豚肉',fodmap:'low'},{name:'牛肉',fodmap:'low'},
+  {name:'サーモン',fodmap:'low'},{name:'鮭',fodmap:'low'},{name:'まぐろ',fodmap:'low'},
+  {name:'卵',fodmap:'low'},{name:'豆腐',fodmap:'low'},{name:'厚揚げ',fodmap:'low'},
+  {name:'にんじん',fodmap:'low'},{name:'ほうれん草',fodmap:'low'},{name:'なす',fodmap:'low'},
+  {name:'きゅうり',fodmap:'low'},{name:'トマト',fodmap:'low'},{name:'レタス',fodmap:'low'},
+  {name:'ピーマン',fodmap:'low'},{name:'もやし',fodmap:'low'},{name:'大根',fodmap:'low'},
+  {name:'小松菜',fodmap:'low'},{name:'チンゲン菜',fodmap:'low'},{name:'白ごま',fodmap:'low'},
+  {name:'バナナ',fodmap:'low'},{name:'いちご',fodmap:'low'},{name:'オレンジ',fodmap:'low'},
+  {name:'みかん',fodmap:'low'},{name:'キウイ',fodmap:'low'},{name:'ぶどう',fodmap:'low'},
+  {name:'醤油',fodmap:'low'},{name:'味噌',fodmap:'low'},{name:'塩',fodmap:'low'},
+  {name:'オリーブオイル',fodmap:'low'},{name:'砂糖',fodmap:'low'},{name:'お茶',fodmap:'low'},
+  {name:'麦茶',fodmap:'low'},{name:'コーヒー',fodmap:'low'},{name:'ラクトースフリー牛乳',fodmap:'low'},
+  // 中FODMAP
+  {name:'ブロッコリー',fodmap:'mid'},{name:'キャベツ',fodmap:'mid'},{name:'白菜',fodmap:'mid'},
+  {name:'さつまいも',fodmap:'mid'},{name:'かぼちゃ',fodmap:'mid'},{name:'とうもろこし',fodmap:'mid'},
+  {name:'アボカド',fodmap:'mid'},{name:'パイナップル',fodmap:'mid'},{name:'メロン',fodmap:'mid'},
+  {name:'グレープフルーツ',fodmap:'mid'},{name:'さくらんぼ',fodmap:'mid'},
+  {name:'じゃがいも',fodmap:'mid'},{name:'えだまめ',fodmap:'mid'},
+  // 高FODMAP
+  {name:'玉ねぎ',fodmap:'high'},{name:'ねぎ',fodmap:'high'},{name:'にんにく',fodmap:'high'},
+  {name:'長ねぎ',fodmap:'high'},{name:'小麦',fodmap:'high'},{name:'パン',fodmap:'high'},
+  {name:'うどん',fodmap:'high'},{name:'ラーメン',fodmap:'high'},{name:'パスタ',fodmap:'high'},
+  {name:'そば',fodmap:'high'},{name:'大麦',fodmap:'high'},{name:'ライ麦',fodmap:'high'},
+  {name:'牛乳',fodmap:'high'},{name:'ヨーグルト',fodmap:'high'},{name:'チーズ',fodmap:'high'},
+  {name:'アイスクリーム',fodmap:'high'},{name:'生クリーム',fodmap:'high'},
+  {name:'りんご',fodmap:'high'},{name:'桃',fodmap:'high'},{name:'梨',fodmap:'high'},
+  {name:'スイカ',fodmap:'high'},{name:'マンゴー',fodmap:'high'},{name:'プルーン',fodmap:'high'},
+  {name:'大豆',fodmap:'high'},{name:'納豆',fodmap:'high'},{name:'きのこ',fodmap:'high'},
+  {name:'しいたけ',fodmap:'high'},{name:'えのき',fodmap:'high'},{name:'まいたけ',fodmap:'high'},
+  {name:'アスパラガス',fodmap:'high'},{name:'セロリ',fodmap:'high'},
+  {name:'はちみつ',fodmap:'high'},{name:'あんこ',fodmap:'high'},
 ];
-const FODMAP_LBL = { low:'低FODMAP', mid:'中FODMAP', high:'高FODMAP' };
-const PAIN_LBL   = ['なし', '軽い', '中程度', '強い'];
 
 // ============================================================
 // STATE
 // ============================================================
-let allMeals  = [];
-let allStools = [];
-let mealItems  = [];   // [{ name, fodmap }, ...]  — 食事モーダルの一時リスト
-let curFodmap  = null; // 現在選択中のFODMAPレベル
-let curBristol = null;
-let curPain    = null;
-let histDate   = localDateStr(); // 履歴で選択中の日付
+let allMeals    = [];
+let allStools   = [];
+let userDict    = []; // Firebaseから取得したユーザー追加の食品 [{id, name, fodmap}]
+let mealItems   = []; // 食事モーダルの一時リスト [{name, fodmap}]
+let curMealFodmap  = null;
+let curBristol     = null;
+let curPain        = null;
+let curDictFodmap  = null;
+let histDate       = localDateStr();
 
 // ============================================================
-// DATE UTILS（日本時間対応・UTCを使わない）
+// UTILS
 // ============================================================
 function localDateStr(d) {
   d = d || new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 }
-
-function localDateMinus(days) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return localDateStr(d);
-}
-
-function nowTime() {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-}
-
+function pad2(n) { return String(n).padStart(2,'0'); }
+function localDateMinus(days) { const d = new Date(); d.setDate(d.getDate()-days); return localDateStr(d); }
+function nowTime() { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
+function genId()  { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(s) {
-  const d = new Date(s + 'T00:00:00');
-  const DAY = ['日','月','火','水','木','金','土'];
-  const today = localDateStr();
-  if (s === today) return '今日';
-  const yest = localDateMinus(1);
-  if (s === yest) return '昨日';
+  const d = new Date(s+'T00:00:00'); const DAY=['日','月','火','水','木','金','土'];
+  if (s === localDateStr()) return '今日';
+  if (s === localDateMinus(1)) return '昨日';
   return `${d.getMonth()+1}/${d.getDate()}(${DAY[d.getDay()]})`;
 }
 
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-}
+const BRISTOL = [
+  {num:1,emoji:'🔴',label:'コロコロ',desc:'タイプ1：硬くてコロコロした塊（重度の便秘）'},
+  {num:2,emoji:'🟠',label:'硬い',    desc:'タイプ2：ソーセージ状だが硬い（便秘）'},
+  {num:3,emoji:'🟡',label:'やや硬',  desc:'タイプ3：表面にひびのあるソーセージ状'},
+  {num:4,emoji:'🟢',label:'普通',    desc:'タイプ4：なめらかなソーセージ状（理想的）'},
+  {num:5,emoji:'🟡',label:'やや軟',  desc:'タイプ5：はっきりした塊の軟らかい便'},
+  {num:6,emoji:'🟠',label:'軟便',    desc:'タイプ6：ふわふわした不定形の軟便'},
+  {num:7,emoji:'🔴',label:'水様',    desc:'タイプ7：固形物のない水様便（下痢）'},
+];
+const FODMAP_LBL = {low:'低FODMAP', mid:'中FODMAP', high:'高FODMAP'};
+const PAIN_LBL   = ['なし','軽い','中程度','強い'];
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// 全辞書（組み込み＋ユーザー追加）を返す
+function fullDict() {
+  const combined = [...BUILTIN_DICT];
+  userDict.forEach(u => {
+    if (!combined.some(b => b.name === u.name)) combined.push({name:u.name, fodmap:u.fodmap});
+  });
+  return combined;
 }
 
 // ============================================================
 // FIREBASE LISTENERS
 // ============================================================
 function setupListeners() {
-  db.ref(`users/${userId}/meals`).on('value', snap => {
+  mealRef().on('value', snap => {
     allMeals = [];
-    if (snap.exists()) snap.forEach(c => allMeals.push({ id: c.key, ...c.val() }));
-    allMeals.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    if (snap.exists()) snap.forEach(c => allMeals.push({id:c.key,...c.val()}));
+    allMeals.sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
     renderToday();
-    if (isTabActive('history')) renderHistoryDay(histDate);
-    if (isTabActive('advice'))  renderAdvice();
-  }, err => console.error('[meals listener]', err));
+    if (isActive('history')) renderHistoryDay(histDate);
+    if (isActive('advice'))  renderAdvice();
+  }, e => console.error('meals',e));
 
-  db.ref(`users/${userId}/stools`).on('value', snap => {
+  stoolRef().on('value', snap => {
     allStools = [];
-    if (snap.exists()) snap.forEach(c => allStools.push({ id: c.key, ...c.val() }));
-    allStools.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    if (snap.exists()) snap.forEach(c => allStools.push({id:c.key,...c.val()}));
+    allStools.sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
     renderToday();
-    if (isTabActive('history')) renderHistoryDay(histDate);
-    if (isTabActive('advice'))  renderAdvice();
-  }, err => console.error('[stools listener]', err));
+    if (isActive('history')) renderHistoryDay(histDate);
+    if (isActive('advice'))  renderAdvice();
+  }, e => console.error('stools',e));
+
+  // FODMAP辞書
+  dictRef().on('value', snap => {
+    userDict = [];
+    if (snap.exists()) snap.forEach(c => userDict.push({id:c.key,...c.val()}));
+    if (isActive('foods')) renderDictList();
+  }, e => console.error('dict',e));
 }
 
-function isTabActive(name) {
-  return document.getElementById('tab-' + name).classList.contains('active');
-}
+function isActive(name) { return document.getElementById('tab-'+name).classList.contains('active'); }
 
 // ============================================================
 // SAVE MEAL
 // ============================================================
 async function saveMeal() {
-  if (mealItems.length === 0) {
-    showToast('食品を1つ以上追加してください');
-    return;
-  }
+  if (mealItems.length === 0) { showToast('食品を1つ以上追加してください'); return; }
   const timeVal = document.getElementById('meal-time').value || nowTime();
   const dateVal = localDateStr();
   const now = Date.now();
-
   try {
-    const writes = mealItems.map((item, i) =>
-      db.ref(`users/${userId}/meals/${genId()}`).set({
-        name:      item.name,
-        fodmap:    item.fodmap,
-        time:      timeVal,
-        date:      dateVal,
-        createdAt: now + i   // i でわずかにずらして順序保持
+    await Promise.all(mealItems.map((item, i) =>
+      mealRef(genId()).set({
+        name: item.name, fodmap: item.fodmap,
+        time: timeVal, date: dateVal, createdAt: now + i
       })
-    );
-    await Promise.all(writes);
+    ));
     showToast(`✅ ${mealItems.length}件の食事を記録しました`);
     closeMealModal();
-  } catch(e) {
-    console.error('saveMeal:', e);
-    showToast('❌ 保存失敗: ' + e.message);
-  }
+  } catch(e) { console.error(e); showToast('❌ 保存失敗: ' + e.message); }
 }
 
 // ============================================================
@@ -573,37 +576,50 @@ async function saveMeal() {
 async function saveStool() {
   if (curBristol === null) { showToast('タイプを選んでください'); return; }
   if (curPain    === null) { showToast('腹痛を選んでください');   return; }
-
-  const rec = {
-    bristol:   curBristol,
-    pain:      curPain,
-    time:      document.getElementById('stool-time').value || nowTime(),
-    date:      localDateStr(),
-    createdAt: Date.now()
-  };
-
   try {
-    await db.ref(`users/${userId}/stools/${genId()}`).set(rec);
+    await stoolRef(genId()).set({
+      bristol: curBristol, pain: curPain,
+      time: document.getElementById('stool-time').value || nowTime(),
+      date: localDateStr(), createdAt: Date.now()
+    });
     showToast('✅ 排便を記録しました');
     closeStoolModal();
-  } catch(e) {
-    console.error('saveStool:', e);
-    showToast('❌ 保存失敗: ' + e.message);
-  }
+  } catch(e) { console.error(e); showToast('❌ 保存失敗: ' + e.message); }
 }
 
+async function delMeal(id)  { if (!confirm('削除しますか？')) return; await mealRef(id).remove();  showToast('削除しました'); }
+async function delStool(id) { if (!confirm('削除しますか？')) return; await stoolRef(id).remove(); showToast('削除しました'); }
+
 // ============================================================
-// DELETE
+// FODMAP辞書 保存・削除
 // ============================================================
-async function delMeal(id) {
-  if (!confirm('この食事記録を削除しますか？')) return;
-  await db.ref(`users/${userId}/meals/${id}`).remove();
+async function saveDictItem() {
+  const name = document.getElementById('dict-name-input').value.trim();
+  if (!name)        { showToast('食品名を入力してください'); return; }
+  if (!curDictFodmap){ showToast('FODMAPレベルを選んでください'); return; }
+  // 重複チェック
+  if (fullDict().some(f => f.name === name)) { showToast('すでに一覧にあります'); return; }
+  try {
+    await dictRef(genId()).set({name, fodmap: curDictFodmap, addedAt: Date.now()});
+    showToast(`✅ "${name}"をリストに追加しました`);
+    closeDictBar();
+    if (isActive('foods')) renderDictList();
+  } catch(e) { console.error(e); showToast('❌ 保存失敗'); }
+}
+
+async function delDictItem(id) {
+  if (!confirm('この食品をリストから削除しますか？')) return;
+  await dictRef(id).remove();
   showToast('削除しました');
 }
-async function delStool(id) {
-  if (!confirm('この排便記録を削除しますか？')) return;
-  await db.ref(`users/${userId}/stools/${id}`).remove();
-  showToast('削除しました');
+
+// 食事記録時にリスト追加（チェックボックスONの場合）
+async function autoSaveToDict(name, fodmap) {
+  if (BUILTIN_DICT.some(f => f.name === name)) return; // 組み込みは保存不要
+  if (userDict.some(u => u.name === name)) return;      // 既存なら保存不要
+  try {
+    await dictRef(genId()).set({name, fodmap, addedAt: Date.now()});
+  } catch(e) { console.error('autoSaveToDict', e); }
 }
 
 // ============================================================
@@ -616,12 +632,8 @@ function renderToday() {
   document.getElementById('st-meal').textContent      = meals.length;
   document.getElementById('st-stool').textContent     = stools.length;
   document.getElementById('st-highfodmap').textContent = meals.filter(m => m.fodmap === 'high').length;
-
-  const combined = [
-    ...meals.map(m  => ({ ...m,  _type: 'meal'  })),
-    ...stools.map(s => ({ ...s,  _type: 'stool' }))
-  ].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-
+  const combined = [...meals.map(m=>({...m,_t:'meal'})),...stools.map(s=>({...s,_t:'stool'}))]
+    .sort((a,b) => (a.time||'').localeCompare(b.time||''));
   const el = document.getElementById('today-records');
   el.innerHTML = combined.length === 0
     ? `<div class="empty"><div class="em-icon">📝</div><div class="em-text">まだ記録がありません</div></div>`
@@ -631,26 +643,21 @@ function renderToday() {
 // ============================================================
 // RENDER: HISTORY
 // ============================================================
-function renderHistory() {
-  renderWeekStrip();
-  renderHistoryDay(histDate);
-}
+function renderHistory() { renderWeekStrip(); renderHistoryDay(histDate); }
 
 function renderWeekStrip() {
   const DAY = ['日','月','火','水','木','金','土'];
   let html = '';
   for (let i = 13; i >= 0; i--) {
-    const d  = new Date();
-    d.setDate(d.getDate() - i);
+    const d  = new Date(); d.setDate(d.getDate()-i);
     const ds = localDateStr(d);
     const hasMeal  = allMeals.some(m => m.date === ds);
     const hasStool = allStools.some(s => s.date === ds);
-    const dotColor = hasStool ? '#8b5cf6' : hasMeal ? '#10b981' : '#e2e8f0';
-    const active   = ds === histDate ? 'active' : '';
-    html += `<div class="week-day ${active}" onclick="selHistDate('${ds}')">
+    const dotClr   = hasStool ? '#8b5cf6' : hasMeal ? '#10b981' : '#e2e8f0';
+    html += `<div class="week-day ${ds===histDate?'active':''}" onclick="selHistDate('${ds}')">
       <div class="wd">${DAY[d.getDay()]}</div>
       <div class="dd">${d.getDate()}</div>
-      <div class="dot" style="background:${dotColor}"></div>
+      <div class="dot" style="background:${dotClr}"></div>
     </div>`;
   }
   const strip = document.getElementById('week-strip');
@@ -658,55 +665,42 @@ function renderWeekStrip() {
   setTimeout(() => { strip.scrollLeft = strip.scrollWidth; }, 30);
 }
 
-function selHistDate(ds) {
-  histDate = ds;
-  renderWeekStrip();
-  renderHistoryDay(ds);
-}
+function selHistDate(ds) { histDate = ds; renderWeekStrip(); renderHistoryDay(ds); }
 
 function renderHistoryDay(ds) {
-  const meals  = allMeals.filter(m => m.date === ds);
-  const stools = allStools.filter(s => s.date === ds);
   const combined = [
-    ...meals.map(m  => ({ ...m,  _type: 'meal'  })),
-    ...stools.map(s => ({ ...s,  _type: 'stool' }))
-  ].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-
-  const card   = document.getElementById('history-card');
-  const header = `<div class="day-header">${fmtDate(ds)}</div>`;
-
+    ...allMeals.filter(m=>m.date===ds).map(m=>({...m,_t:'meal'})),
+    ...allStools.filter(s=>s.date===ds).map(s=>({...s,_t:'stool'}))
+  ].sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const card = document.getElementById('history-card');
+  const hdr  = `<div class="day-header">${fmtDate(ds)}</div>`;
   card.innerHTML = combined.length === 0
-    ? header + `<div class="empty" style="padding:20px 0"><div class="em-icon">📅</div><div class="em-text">記録なし</div></div>`
-    : header + combined.map(r => buildRecItem(r, false)).join('');
+    ? hdr + `<div class="empty" style="padding:20px 0"><div class="em-icon">📅</div><div class="em-text">記録なし</div></div>`
+    : hdr + combined.map(r => buildRecItem(r, false)).join('');
 }
 
-// ============================================================
-// BUILD RECORD ITEM
-// ============================================================
 function buildRecItem(r, showDel) {
-  if (r._type === 'meal') {
-    const cls  = { low:'badge-low', mid:'badge-mid', high:'badge-high' }[r.fodmap] || '';
-    const del  = showDel ? `<button class="del-btn" onclick="delMeal('${r.id}')">削除</button>` : '';
+  if (r._t === 'meal') {
+    const cls = {low:'badge-low',mid:'badge-mid',high:'badge-high'}[r.fodmap]||'';
+    const del = showDel ? `<button class="del-btn" onclick="delMeal('${r.id}')">削除</button>` : '';
     return `<div class="rec-item">
       <div class="rec-dot dot-meal"></div>
       <div class="rec-time">${r.time||''}</div>
       <div style="flex:1;min-width:0">
         <div class="rec-name">${escHtml(r.name)}</div>
         <span class="badge ${cls}">${FODMAP_LBL[r.fodmap]||''}</span>
-      </div>${del}
-    </div>`;
+      </div>${del}</div>`;
   } else {
-    const b       = BRISTOL[r.bristol - 1] || BRISTOL[3];
-    const painTxt = r.pain > 0 ? `　腹痛:${PAIN_LBL[r.pain]}` : '';
-    const del     = showDel ? `<button class="del-btn" onclick="delStool('${r.id}')">削除</button>` : '';
+    const b = BRISTOL[r.bristol-1]||BRISTOL[3];
+    const p = r.pain>0 ? `　腹痛:${PAIN_LBL[r.pain]}` : '';
+    const del = showDel ? `<button class="del-btn" onclick="delStool('${r.id}')">削除</button>` : '';
     return `<div class="rec-item">
       <div class="rec-dot dot-stool"></div>
       <div class="rec-time">${r.time||''}</div>
       <div style="flex:1;min-width:0">
         <div class="rec-name">${b.emoji} タイプ${r.bristol}・${b.label}</div>
-        <div class="rec-sub">${b.desc.replace(/^タイプ\d：/,'')}${painTxt}</div>
-      </div>${del}
-    </div>`;
+        <div class="rec-sub">${b.desc.replace(/^タイプ\d：/,'')}${p}</div>
+      </div>${del}</div>`;
   }
 }
 
@@ -716,215 +710,247 @@ function buildRecItem(r, showDel) {
 function renderAdvice() {
   const el = document.getElementById('advice-content');
   if (allMeals.length < 3 || allStools.length < 3) {
-    el.innerHTML = `<div class="empty"><div class="em-icon">🔍</div>
-      <div class="em-text">記録が増えると自動で分析します<br>（食事・排便それぞれ3件以上）</div></div>`;
+    el.innerHTML = `<div class="empty"><div class="em-icon">🔍</div><div class="em-text">記録が増えると自動で分析します<br>（食事・排便それぞれ3件以上）</div></div>`;
     return;
   }
+  const now=Date.now(), d14=now-14*86400000, d7=now-7*86400000;
+  const rM=allMeals.filter(m=>(m.createdAt||0)>=d14), rS=allStools.filter(s=>(s.createdAt||0)>=d14);
+  const wM=allMeals.filter(m=>(m.createdAt||0)>=d7),  wS=allStools.filter(s=>(s.createdAt||0)>=d7);
+  const cards = [];
 
-  const now    = Date.now();
-  const d14ago = now - 14 * 86400000;
-  const d7ago  = now - 7  * 86400000;
-  const rMeals  = allMeals.filter(m  => (m.createdAt || 0) >= d14ago);
-  const rStools = allStools.filter(s => (s.createdAt || 0) >= d14ago);
-  const wMeals  = allMeals.filter(m  => (m.createdAt || 0) >= d7ago);
-  const wStools = allStools.filter(s => (s.createdAt || 0) >= d7ago);
-  const cards   = [];
-
-  // 週まとめ
-  if (wStools.length > 0) {
-    const avg    = wStools.reduce((s, x) => s + x.bristol, 0) / wStools.length;
-    const avgStr = avg.toFixed(1);
-    const highCnt = wMeals.filter(m => m.fodmap === 'high').length;
+  if (wS.length > 0) {
+    const avg = wS.reduce((s,x)=>s+x.bristol,0)/wS.length;
+    const highCnt = wM.filter(m=>m.fodmap==='high').length;
     let color, msg;
-    if (avg >= 3.5 && avg <= 4.5) {
-      color = 'green'; msg = `今週の平均ブリストルスコアは <b>${avgStr}</b> で理想的な範囲です 👍`;
-    } else if (avg < 3.5) {
-      color = 'yellow'; msg = `今週の平均ブリストルスコアは <b>${avgStr}</b>（やや硬め）。水分を意識して摂りましょう。`;
-    } else {
-      color = 'red'; msg = `今週の平均ブリストルスコアは <b>${avgStr}</b>（やや軟らかめ）。高FODMAP食を減らしてみましょう。`;
-    }
-    cards.push(`<div class="adv-card ${color}">
-      <div class="adv-title">📊 今週のまとめ</div>
-      <div class="adv-body">${msg}<br>排便：${wStools.length}回　食事：${wMeals.length}回　高FODMAP：${highCnt}回</div>
-    </div>`);
+    if (avg>=3.5&&avg<=4.5){color='green';msg=`今週の平均ブリストルスコアは <b>${avg.toFixed(1)}</b> で理想的な範囲です 👍`;}
+    else if(avg<3.5){color='yellow';msg=`今週の平均ブリストルスコアは <b>${avg.toFixed(1)}</b>（やや硬め）。水分を意識して摂りましょう。`;}
+    else{color='red';msg=`今週の平均ブリストルスコアは <b>${avg.toFixed(1)}</b>（やや軟らかめ）。高FODMAP食を減らしてみましょう。`;}
+    cards.push(`<div class="adv-card ${color}"><div class="adv-title">📊 今週のまとめ</div><div class="adv-body">${msg}<br>排便：${wS.length}回　食事：${wM.length}回　高FODMAP：${highCnt}回</div></div>`);
   }
 
-  // FODMAPと便の相関
   const corrs = [];
-  rStools.forEach(stool => {
-    const st = new Date(`${stool.date}T${stool.time||'12:00'}`).getTime();
-    const prev = rMeals.filter(m => {
-      const mt = new Date(`${m.date}T${m.time||'12:00'}`).getTime();
-      return mt >= st - 20*3600000 && mt <= st - 3*3600000;
-    });
-    if (prev.length > 0) {
-      corrs.push({
-        hasHigh: prev.some(m => m.fodmap === 'high'),
-        isBad:   stool.bristol <= 2 || stool.bristol >= 6
-      });
-    }
+  rS.forEach(s => {
+    const st = new Date(`${s.date}T${s.time||'12:00'}`).getTime();
+    const prev = rM.filter(m => { const mt=new Date(`${m.date}T${m.time||'12:00'}`).getTime(); return mt>=st-20*3600000&&mt<=st-3*3600000; });
+    if (prev.length>0) corrs.push({hasHigh:prev.some(m=>m.fodmap==='high'),isBad:s.bristol<=2||s.bristol>=6});
   });
-  if (corrs.length >= 3) {
-    const hTotal = corrs.filter(c =>  c.hasHigh).length;
-    const lTotal = corrs.filter(c => !c.hasHigh).length;
-    const hBad   = corrs.filter(c =>  c.hasHigh && c.isBad).length;
-    const lBad   = corrs.filter(c => !c.hasHigh && c.isBad).length;
-    if (hTotal > 0 && lTotal > 0) {
-      const hRate = Math.round(hBad / hTotal * 100);
-      const lRate = Math.round(lBad / lTotal * 100);
-      if (hRate > lRate + 15) {
-        cards.push(`<div class="adv-card red">
-          <div class="adv-title">⚠️ FODMAPパターンを検出</div>
-          <div class="adv-body">高FODMAP食の後に便が乱れやすい傾向があります。<br>
-          高FODMAP後の不調率：<b>${hRate}%</b>　低/中FODMAP後：<b>${lRate}%</b><br>
-          玉ねぎ・小麦・乳製品などを控えてみましょう。</div>
-        </div>`);
-      } else {
-        cards.push(`<div class="adv-card green">
-          <div class="adv-title">✅ FODMAPとの関連</div>
-          <div class="adv-body">今の記録では高FODMAP食と便の乱れの強い関連は見られません。引き続き記録を続けましょう。</div>
-        </div>`);
-      }
+  if (corrs.length>=3) {
+    const hT=corrs.filter(c=>c.hasHigh).length, lT=corrs.filter(c=>!c.hasHigh).length;
+    const hB=corrs.filter(c=>c.hasHigh&&c.isBad).length, lB=corrs.filter(c=>!c.hasHigh&&c.isBad).length;
+    if (hT>0&&lT>0) {
+      const hR=Math.round(hB/hT*100), lR=Math.round(lB/lT*100);
+      if (hR>lR+15) cards.push(`<div class="adv-card red"><div class="adv-title">⚠️ FODMAPパターンを検出</div><div class="adv-body">高FODMAP食の後に便が乱れやすい傾向があります。<br>高FODMAP後の不調率：<b>${hR}%</b>　低/中FODMAP後：<b>${lR}%</b><br>玉ねぎ・小麦・乳製品などを控えてみましょう。</div></div>`);
+      else cards.push(`<div class="adv-card green"><div class="adv-title">✅ FODMAPとの関連</div><div class="adv-body">今の記録では高FODMAP食と便の乱れの強い関連は見られません。引き続き記録を続けましょう。</div></div>`);
     }
   }
 
-  // 最近の高FODMAP食品
-  const recentHigh = [...new Set(rMeals.filter(m => m.fodmap === 'high').map(m => m.name))].slice(0, 10);
-  if (recentHigh.length > 0) {
-    cards.push(`<div class="adv-card yellow">
-      <div class="adv-title">🍽️ 最近の高FODMAP食品</div>
-      <div class="adv-body">${recentHigh.map(n => `<span class="badge badge-high" style="margin:2px">${escHtml(n)}</span>`).join(' ')}<br>
-      <span style="font-size:11px;display:block;margin-top:6px">これらの食品がIBS症状に影響している可能性があります。</span></div>
-    </div>`);
+  const recentHigh = [...new Set(rM.filter(m=>m.fodmap==='high').map(m=>m.name))].slice(0,10);
+  if (recentHigh.length>0) cards.push(`<div class="adv-card yellow"><div class="adv-title">🍽️ 最近の高FODMAP食品</div><div class="adv-body">${recentHigh.map(n=>`<span class="badge badge-high" style="margin:2px">${escHtml(n)}</span>`).join(' ')}<br><span style="font-size:11px;display:block;margin-top:6px">これらの食品がIBS症状に影響している可能性があります。</span></div></div>`);
+
+  if (rS.length>=5) {
+    const rate=Math.round(rS.filter(s=>s.pain>=2).length/rS.length*100);
+    if (rate>=30) cards.push(`<div class="adv-card blue"><div class="adv-title">💡 腹痛対策のヒント</div><div class="adv-body">中〜強い腹痛を伴う排便が <b>${rate}%</b> あります。<br>・食事はゆっくりよく噛む<br>・食後すぐの激しい運動を避ける<br>・ストレス管理も重要です<br><span style="font-size:11px">症状が続く場合は医師にご相談ください。</span></div></div>`);
   }
 
-  // 腹痛率
-  if (rStools.length >= 5) {
-    const rate = Math.round(rStools.filter(s => s.pain >= 2).length / rStools.length * 100);
-    if (rate >= 30) {
-      cards.push(`<div class="adv-card blue">
-        <div class="adv-title">💡 腹痛対策のヒント</div>
-        <div class="adv-body">中〜強い腹痛を伴う排便が <b>${rate}%</b> あります。<br>
-        ・食事はゆっくりよく噛む<br>・食後すぐの激しい運動を避ける<br>・ストレス管理も重要です<br>
-        <span style="font-size:11px">症状が続く場合は医師にご相談ください。</span></div>
-      </div>`);
-    }
+  if (rM.length>=5) {
+    const lowR=Math.round(rM.filter(m=>m.fodmap==='low').length/rM.length*100);
+    if (lowR>=60) cards.push(`<div class="adv-card purple"><div class="adv-title">🌟 低FODMAPが定着中</div><div class="adv-body">食事の <b>${lowR}%</b> が低FODMAPです。この食習慣がIBS症状の安定につながります 🎉</div></div>`);
   }
 
-  // 低FODMAP定着
-  if (rMeals.length >= 5) {
-    const lowRatio = Math.round(rMeals.filter(m => m.fodmap === 'low').length / rMeals.length * 100);
-    if (lowRatio >= 60) {
-      cards.push(`<div class="adv-card purple">
-        <div class="adv-title">🌟 低FODMAPが定着中</div>
-        <div class="adv-body">食事の <b>${lowRatio}%</b> が低FODMAPです。この食習慣がIBS症状の安定につながります 🎉</div>
-      </div>`);
-    }
-  }
-
-  el.innerHTML = cards.length > 0 ? cards.join('') : `<div class="empty">
-    <div class="em-icon">📈</div><div class="em-text">もう少し記録が増えると詳しい分析ができます</div>
-  </div>`;
+  el.innerHTML = cards.length>0 ? cards.join('') : `<div class="empty"><div class="em-icon">📈</div><div class="em-text">もう少し記録が増えると詳しい分析ができます</div></div>`;
 }
 
 // ============================================================
-// MEAL MODAL
+// RENDER: 食品一覧
+// ============================================================
+function renderDictList() {
+  const query = (document.getElementById('dict-search').value || '').trim();
+  const dict  = fullDict();
+  const filtered = query ? dict.filter(f => f.name.includes(query)) : dict;
+  const el = document.getElementById('dict-list');
+
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="em-icon">🔍</div><div class="em-text">「${escHtml(query)}」は見つかりません<br>＋ボタンで追加できます</div></div>`;
+    return;
+  }
+
+  const groups = {high:[], mid:[], low:[]};
+  filtered.forEach(f => (groups[f.fodmap]||groups.low).push(f));
+
+  const sectionLabel = {high:'🔴 高FODMAP（注意）', mid:'🟡 中FODMAP（適量）', low:'🟢 低FODMAP（安心）'};
+  const sectionColor = {high:'#991b1b', mid:'#92400e', low:'#065f46'};
+
+  let html = '';
+  ['high','mid','low'].forEach(lvl => {
+    if (groups[lvl].length === 0) return;
+    html += `<div class="dict-section">
+      <div class="dict-section-title" style="color:${sectionColor[lvl]}">${sectionLabel[lvl]}</div>`;
+    groups[lvl].forEach(f => {
+      const userEntry = userDict.find(u => u.name === f.name);
+      const isUser    = !!userEntry;
+      const delBtn    = isUser
+        ? `<button class="dict-item-del" onclick="delDictItem('${userEntry.id}')">🗑</button>`
+        : `<span class="dict-item-src">組み込み</span>`;
+      html += `<div class="dict-item">
+        <span class="badge badge-${lvl}">${FODMAP_LBL[lvl]}</span>
+        <span class="dict-item-name">${escHtml(f.name)}</span>
+        ${delBtn}
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ============================================================
+// 食品辞書 フローティングバー
+// ============================================================
+function openDictBar() {
+  curDictFodmap = null;
+  document.getElementById('dict-name-input').value = '';
+  document.querySelectorAll('#add-dict-bar .fodmap-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('add-dict-bar').classList.add('open');
+  document.getElementById('dict-fab').style.display = 'none';
+  setTimeout(() => document.getElementById('dict-name-input').focus(), 200);
+}
+function closeDictBar() {
+  document.getElementById('add-dict-bar').classList.remove('open');
+  document.getElementById('dict-fab').style.display = 'flex';
+}
+function selDictFodmap(lvl) {
+  curDictFodmap = lvl;
+  document.querySelectorAll('#add-dict-bar .fodmap-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('dict-' + lvl).classList.add('sel');
+}
+
+// ============================================================
+// 食事モーダル
 // ============================================================
 function openMealModal() {
-  mealItems  = [];
-  curFodmap  = null;
-  document.getElementById('food-input').value = '';
-  document.getElementById('meal-time').value  = nowTime();
-  document.getElementById('food-list').style.display = 'none';
-  document.getElementById('food-list').innerHTML     = '';
-  document.querySelectorAll('.fodmap-btn').forEach(b => b.classList.remove('sel'));
+  mealItems     = [];
+  curMealFodmap = null;
+  document.getElementById('food-input').value           = '';
+  document.getElementById('meal-time').value            = nowTime();
+  document.getElementById('food-list').style.display    = 'none';
+  document.getElementById('food-list').innerHTML        = '';
+  document.getElementById('suggest-list').classList.remove('open');
+  document.getElementById('save-to-dict-row').style.display = 'none';
+  document.querySelectorAll('#meal-modal .fodmap-btn').forEach(b => b.classList.remove('sel'));
   document.getElementById('meal-modal').classList.add('open');
   setTimeout(() => document.getElementById('food-input').focus(), 300);
 }
 function closeMealModal() {
   document.getElementById('meal-modal').classList.remove('open');
+  document.getElementById('suggest-list').classList.remove('open');
+}
+
+// オートコンプリート
+function onFoodInput() {
+  const query = document.getElementById('food-input').value.trim();
+  const sl = document.getElementById('suggest-list');
+  if (!query) { sl.classList.remove('open'); return; }
+
+  const dict = fullDict();
+  const matches = dict.filter(f => f.name.includes(query) || query.includes(f.name)).slice(0, 6);
+
+  if (matches.length === 0) { sl.classList.remove('open'); return; }
+
+  sl.innerHTML = matches.map(f => {
+    const cls = {low:'badge-low',mid:'badge-mid',high:'badge-high'}[f.fodmap];
+    return `<div class="suggest-item" onclick="selectSuggest('${escHtml(f.name).replace(/'/g,"\\'")}','${f.fodmap}')">
+      <span class="badge ${cls}">${FODMAP_LBL[f.fodmap]}</span>
+      <span>${escHtml(f.name)}</span>
+    </div>`;
+  }).join('');
+  sl.classList.add('open');
+}
+
+function selectSuggest(name, fodmap) {
+  document.getElementById('food-input').value = name;
+  document.getElementById('suggest-list').classList.remove('open');
+  // FODMAPを自動選択
+  selMealFodmap(fodmap);
+  // リスト追加チェックボックスは不要（既知の食品）
+  document.getElementById('save-to-dict-row').style.display = 'none';
+  document.getElementById('food-input').focus();
+}
+
+function selMealFodmap(lvl) {
+  curMealFodmap = lvl;
+  document.querySelectorAll('#meal-modal .fodmap-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('fodmap-' + lvl).classList.add('sel');
+  // 食品名が入力済みで辞書にない場合、保存チェックを表示
+  const name = document.getElementById('food-input').value.trim();
+  if (name && !fullDict().some(f => f.name === name)) {
+    document.getElementById('save-to-dict-row').style.display = 'flex';
+  }
 }
 
 function addFoodItem() {
   const name = document.getElementById('food-input').value.trim();
-  if (!name)     { showToast('食品名を入力してください'); return; }
-  if (!curFodmap){ showToast('FODMAPレベルを選んでください'); return; }
+  if (!name)         { showToast('食品名を入力してください'); return; }
+  if (!curMealFodmap){ showToast('FODMAPレベルを選んでください'); return; }
 
-  mealItems.push({ name, fodmap: curFodmap });
-  renderFoodList();
+  mealItems.push({name, fodmap: curMealFodmap});
 
-  // リセット（FODMAPはリセットしない → 同レベルの食品を連続追加しやすく）
+  // 辞書に追加するか
+  const saveChk = document.getElementById('save-to-dict');
+  if (saveChk.checked && document.getElementById('save-to-dict-row').style.display !== 'none') {
+    autoSaveToDict(name, curMealFodmap);
+  }
+
+  renderMealFoodList();
   document.getElementById('food-input').value = '';
+  document.getElementById('suggest-list').classList.remove('open');
+  document.getElementById('save-to-dict-row').style.display = 'none';
   document.getElementById('food-input').focus();
 }
 
-function removeFoodItem(idx) {
-  mealItems.splice(idx, 1);
-  renderFoodList();
-}
+function removeMealItem(idx) { mealItems.splice(idx,1); renderMealFoodList(); }
 
-function renderFoodList() {
+function renderMealFoodList() {
   const el = document.getElementById('food-list');
-  if (mealItems.length === 0) {
-    el.style.display = 'none';
-    el.innerHTML = '';
-    return;
-  }
+  if (mealItems.length === 0) { el.style.display='none'; el.innerHTML=''; return; }
+  const badgeCls = {low:'badge-low',mid:'badge-mid',high:'badge-high'};
   el.style.display = 'flex';
-  const badgeCls = { low:'badge-low', mid:'badge-mid', high:'badge-high' };
-  el.innerHTML = mealItems.map((item, i) => `
+  el.innerHTML = mealItems.map((item,i) => `
     <div class="food-item">
       <span class="badge ${badgeCls[item.fodmap]}">${FODMAP_LBL[item.fodmap]}</span>
       <span class="food-item-name">${escHtml(item.name)}</span>
-      <button class="food-item-del" onclick="removeFoodItem(${i})">✕</button>
-    </div>
-  `).join('');
+      <button class="food-item-del" onclick="removeMealItem(${i})">✕</button>
+    </div>`).join('');
 }
 
 // ============================================================
-// STOOL MODAL
+// 排便モーダル
 // ============================================================
 function openStoolModal() {
-  curBristol = null;
-  curPain    = null;
+  curBristol = null; curPain = null;
   document.getElementById('stool-time').value = nowTime();
   document.querySelectorAll('.bristol-item').forEach(b => b.classList.remove('sel'));
   document.querySelectorAll('.pain-btn').forEach(b => b.classList.remove('sel'));
   document.getElementById('bristol-desc').textContent = 'タイプを選んでください';
   document.getElementById('stool-modal').classList.add('open');
 }
-function closeStoolModal() {
-  document.getElementById('stool-modal').classList.remove('open');
-}
+function closeStoolModal() { document.getElementById('stool-modal').classList.remove('open'); }
 
 // ============================================================
-// SELECTION
+// 選択
 // ============================================================
-function selFodmap(level) {
-  curFodmap = level;
-  document.querySelectorAll('.fodmap-btn').forEach(b => b.classList.remove('sel'));
-  document.getElementById('fodmap-' + level).classList.add('sel');
-}
-
 function selBristol(num) {
   curBristol = num;
   document.querySelectorAll('.bristol-item').forEach(b => b.classList.remove('sel'));
-  document.getElementById('bristol-item-' + num).classList.add('sel');
-  document.getElementById('bristol-desc').textContent = BRISTOL[num - 1].desc;
+  document.getElementById('bi-' + num).classList.add('sel');
+  document.getElementById('bristol-desc').textContent = BRISTOL[num-1].desc;
 }
-
-function selPain(level) {
-  curPain = level;
+function selPain(lvl) {
+  curPain = lvl;
   document.querySelectorAll('.pain-btn').forEach(b => b.classList.remove('sel'));
-  document.getElementById('pain-' + level).classList.add('sel');
+  document.getElementById('pain-' + lvl).classList.add('sel');
 }
-
-// Close on outside tap
-document.getElementById('meal-modal').addEventListener('click',  closeMealModal);
-document.getElementById('stool-modal').addEventListener('click', closeStoolModal);
 
 // ============================================================
-// TAB SWITCHING
+// TAB
 // ============================================================
 function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -933,6 +959,14 @@ function switchTab(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'history') renderHistory();
   if (name === 'advice')  renderAdvice();
+  if (name === 'foods')   renderDictList();
+}
+
+// ============================================================
+// 「今」ボタン
+// ============================================================
+function setNowTime(inputId) {
+  document.getElementById(inputId).value = nowTime();
 }
 
 // ============================================================
@@ -940,29 +974,31 @@ function switchTab(name) {
 // ============================================================
 function showToast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
 }
+
+// ============================================================
+// MODAL外タップで閉じる
+// ============================================================
+document.getElementById('meal-modal').addEventListener('click',  closeMealModal);
+document.getElementById('stool-modal').addEventListener('click', closeStoolModal);
 
 // ============================================================
 // INIT
 // ============================================================
 function initBristolGrid() {
   document.getElementById('bristol-grid').innerHTML = BRISTOL.map(b =>
-    `<div class="bristol-item" id="bristol-item-${b.num}" onclick="selBristol(${b.num})">
+    `<div class="bristol-item" id="bi-${b.num}" onclick="selBristol(${b.num})">
       <div class="b-em">${b.emoji}</div>
       <div class="b-num">${b.num}</div>
       <div class="b-lbl">${b.label}</div>
-    </div>`
-  ).join('');
+    </div>`).join('');
 }
 
 function initHeader() {
-  const d   = new Date();
-  const DAY = ['日','月','火','水','木','金','土'];
-  document.getElementById('header-date').textContent =
-    `${d.getMonth()+1}月${d.getDate()}日(${DAY[d.getDay()]})`;
+  const d=new Date(), DAY=['日','月','火','水','木','金','土'];
+  document.getElementById('header-date').textContent = `${d.getMonth()+1}月${d.getDate()}日(${DAY[d.getDay()]})`;
 }
 
 function init() {
