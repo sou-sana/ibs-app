@@ -327,23 +327,8 @@
       <div class="suggest-list" id="suggest-list"></div>
     </div>
 
-    <label class="form-label">FODMAP レベル</label>
-    <div class="fodmap-sel">
-      <button class="fodmap-btn low"  id="fodmap-low"  onclick="selMealFodmap('low')"  style="font-family:inherit">低<span class="sub">安心</span></button>
-      <button class="fodmap-btn mid"  id="fodmap-mid"  onclick="selMealFodmap('mid')"  style="font-family:inherit">中<span class="sub">適量</span></button>
-      <button class="fodmap-btn high" id="fodmap-high" onclick="selMealFodmap('high')" style="font-family:inherit">高<span class="sub">注意</span></button>
-    </div>
-    <div class="fodmap-hint">
-      <b style="color:#065f46">低</b>：米・肉・魚・卵・にんじん・ほうれん草など<br>
-      <b style="color:#92400e">中</b>：じゃがいも・ブロッコリー・一部の果物など<br>
-      <b style="color:#991b1b">高</b>：玉ねぎ・小麦・牛乳・りんご・ニンニクなど
-    </div>
-
-    <!-- 新規食品をリストに保存 -->
-    <div class="save-to-dict-row" id="save-to-dict-row" style="display:none">
-      <input type="checkbox" id="save-to-dict" checked style="width:16px;height:16px;accent-color:#10b981">
-      <label for="save-to-dict">この食品をFODMAP食品リストに追加する</label>
-    </div>
+    <!-- FODMAPは食品一覧から自動引用 -->
+    <div id="fodmap-auto-hint" style="display:none;margin-top:8px;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600"></div>
 
     <div style="display:flex;gap:6px;margin-top:12px;align-items:center">
       <button class="add-food-btn" onclick="addFoodItem()">追加</button>
@@ -681,14 +666,15 @@ function renderHistoryDay(ds) {
 
 function buildRecItem(r, showDel) {
   if (r._t === 'meal') {
-    const cls = {low:'badge-low',mid:'badge-mid',high:'badge-high'}[r.fodmap]||'';
-    const del = showDel ? `<button class="del-btn" onclick="delMeal('${r.id}')">削除</button>` : '';
+    const cls   = {low:'badge-low', mid:'badge-mid', high:'badge-high'}[r.fodmap] || '';
+    const badge = r.fodmap ? `<span class="badge ${cls}">${FODMAP_LBL[r.fodmap]}</span>` : '';
+    const del   = showDel ? `<button class="del-btn" onclick="delMeal('${r.id}')">削除</button>` : '';
     return `<div class="rec-item">
       <div class="rec-dot dot-meal"></div>
       <div class="rec-time">${r.time||''}</div>
       <div style="flex:1;min-width:0">
         <div class="rec-name">${escHtml(r.name)}</div>
-        <span class="badge ${cls}">${FODMAP_LBL[r.fodmap]||''}</span>
+        ${badge}
       </div>${del}</div>`;
   } else {
     const b = BRISTOL[r.bristol-1]||BRISTOL[3];
@@ -829,13 +815,12 @@ function selDictFodmap(lvl) {
 function openMealModal() {
   mealItems     = [];
   curMealFodmap = null;
-  document.getElementById('food-input').value           = '';
-  document.getElementById('meal-time').value            = nowTime();
-  document.getElementById('food-list').style.display    = 'none';
-  document.getElementById('food-list').innerHTML        = '';
+  document.getElementById('food-input').value        = '';
+  document.getElementById('meal-time').value         = nowTime();
+  document.getElementById('food-list').style.display = 'none';
+  document.getElementById('food-list').innerHTML     = '';
   document.getElementById('suggest-list').classList.remove('open');
-  document.getElementById('save-to-dict-row').style.display = 'none';
-  document.querySelectorAll('#meal-modal .fodmap-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('fodmap-auto-hint').style.display = 'none';
   document.getElementById('meal-modal').classList.add('open');
   setTimeout(() => document.getElementById('food-input').focus(), 300);
 }
@@ -844,21 +829,37 @@ function closeMealModal() {
   document.getElementById('suggest-list').classList.remove('open');
 }
 
-// オートコンプリート
+// オートコンプリート（FODMAP辞書から自動引用）
 function onFoodInput() {
   const query = document.getElementById('food-input').value.trim();
-  const sl = document.getElementById('suggest-list');
-  if (!query) { sl.classList.remove('open'); return; }
+  const sl    = document.getElementById('suggest-list');
+  const hint  = document.getElementById('fodmap-auto-hint');
 
-  const dict = fullDict();
-  const matches = dict.filter(f => f.name.includes(query) || query.includes(f.name)).slice(0, 6);
+  if (!query) {
+    sl.classList.remove('open');
+    hint.style.display = 'none';
+    curMealFodmap = null;
+    return;
+  }
 
+  // 完全一致で自動FODMAP設定
+  const exact = fullDict().find(f => f.name === query);
+  if (exact) {
+    curMealFodmap = exact.fodmap;
+    showFodmapHint(exact.fodmap, exact.name);
+  } else {
+    curMealFodmap = null;
+    hint.style.display = 'none';
+  }
+
+  // サジェスト候補
+  const matches = fullDict().filter(f => f.name.includes(query) && f.name !== query).slice(0, 6);
   if (matches.length === 0) { sl.classList.remove('open'); return; }
 
   sl.innerHTML = matches.map(f => {
-    const cls = {low:'badge-low',mid:'badge-mid',high:'badge-high'}[f.fodmap];
-    return `<div class="suggest-item" onclick="selectSuggest('${escHtml(f.name).replace(/'/g,"\\'")}','${f.fodmap}')">
-      <span class="badge ${cls}">${FODMAP_LBL[f.fodmap]}</span>
+    const cls = {low:'badge-low', mid:'badge-mid', high:'badge-high'}[f.fodmap] || '';
+    return `<div class="suggest-item" onclick="selectSuggest('${f.name.replace(/'/g,"\\'")}','${f.fodmap}')">
+      <span class="badge ${cls}">${FODMAP_LBL[f.fodmap]||''}</span>
       <span>${escHtml(f.name)}</span>
     </div>`;
   }).join('');
@@ -868,41 +869,37 @@ function onFoodInput() {
 function selectSuggest(name, fodmap) {
   document.getElementById('food-input').value = name;
   document.getElementById('suggest-list').classList.remove('open');
-  // FODMAPを自動選択
-  selMealFodmap(fodmap);
-  // リスト追加チェックボックスは不要（既知の食品）
-  document.getElementById('save-to-dict-row').style.display = 'none';
+  curMealFodmap = fodmap;
+  showFodmapHint(fodmap, name);
   document.getElementById('food-input').focus();
 }
 
-function selMealFodmap(lvl) {
-  curMealFodmap = lvl;
-  document.querySelectorAll('#meal-modal .fodmap-btn').forEach(b => b.classList.remove('sel'));
-  document.getElementById('fodmap-' + lvl).classList.add('sel');
-  // 食品名が入力済みで辞書にない場合、保存チェックを表示
-  const name = document.getElementById('food-input').value.trim();
-  if (name && !fullDict().some(f => f.name === name)) {
-    document.getElementById('save-to-dict-row').style.display = 'flex';
-  }
+function showFodmapHint(fodmap, name) {
+  const hint = document.getElementById('fodmap-auto-hint');
+  const cfg  = {
+    low:  { bg:'#d1fae5', color:'#065f46', text:'低FODMAP（安心）' },
+    mid:  { bg:'#fef3c7', color:'#92400e', text:'中FODMAP（適量）' },
+    high: { bg:'#fee2e2', color:'#991b1b', text:'高FODMAP（注意）' },
+  }[fodmap];
+  if (!cfg) { hint.style.display = 'none'; return; }
+  hint.style.display     = 'block';
+  hint.style.background  = cfg.bg;
+  hint.style.color       = cfg.color;
+  hint.textContent       = `📋 「${name}」→ ${cfg.text}（食品一覧より）`;
 }
 
 function addFoodItem() {
   const name = document.getElementById('food-input').value.trim();
-  if (!name)         { showToast('食品名を入力してください'); return; }
-  if (!curMealFodmap){ showToast('FODMAPレベルを選んでください'); return; }
+  if (!name) { showToast('食品名を入力してください'); return; }
 
-  mealItems.push({name, fodmap: curMealFodmap});
-
-  // 辞書に追加するか
-  const saveChk = document.getElementById('save-to-dict');
-  if (saveChk.checked && document.getElementById('save-to-dict-row').style.display !== 'none') {
-    autoSaveToDict(name, curMealFodmap);
-  }
+  // FODMAPは辞書引用（なければnull）
+  mealItems.push({ name, fodmap: curMealFodmap || null });
 
   renderMealFoodList();
+  curMealFodmap = null;
   document.getElementById('food-input').value = '';
   document.getElementById('suggest-list').classList.remove('open');
-  document.getElementById('save-to-dict-row').style.display = 'none';
+  document.getElementById('fodmap-auto-hint').style.display = 'none';
   document.getElementById('food-input').focus();
 }
 
@@ -911,14 +908,18 @@ function removeMealItem(idx) { mealItems.splice(idx,1); renderMealFoodList(); }
 function renderMealFoodList() {
   const el = document.getElementById('food-list');
   if (mealItems.length === 0) { el.style.display='none'; el.innerHTML=''; return; }
-  const badgeCls = {low:'badge-low',mid:'badge-mid',high:'badge-high'};
+  const badgeCls = {low:'badge-low', mid:'badge-mid', high:'badge-high'};
   el.style.display = 'flex';
-  el.innerHTML = mealItems.map((item,i) => `
-    <div class="food-item">
-      <span class="badge ${badgeCls[item.fodmap]}">${FODMAP_LBL[item.fodmap]}</span>
+  el.innerHTML = mealItems.map((item, i) => {
+    const badge = item.fodmap
+      ? `<span class="badge ${badgeCls[item.fodmap]}">${FODMAP_LBL[item.fodmap]}</span>`
+      : `<span style="font-size:10px;color:#94a3b8">不明</span>`;
+    return `<div class="food-item">
+      ${badge}
       <span class="food-item-name">${escHtml(item.name)}</span>
       <button class="food-item-del" onclick="removeMealItem(${i})">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
