@@ -96,6 +96,17 @@
     }
     .form-input:focus { border-color: #10b981; }
 
+    /* ── MEAL SLOT ── */
+    .slot-btn {
+      flex: 1; padding: 10px 4px; border: 2px solid #e2e8f0; border-radius: 14px;
+      background: white; cursor: pointer; font-size: 18px; text-align: center;
+      line-height: 1.4; transition: all .15s; font-family: inherit;
+    }
+    .slot-btn span { font-size: 11px; font-weight: 700; color: #94a3b8; display: block; }
+    .slot-btn.sel { border-color: #10b981; background: #ecfdf5; }
+    .slot-btn.sel span { color: #10b981; }
+    .slot-btn:active { transform: scale(.96); }
+
     /* ── AUTOCOMPLETE ── */
     .suggest-wrap { position: relative; }
     .suggest-list {
@@ -318,7 +329,15 @@
     <div class="modal-handle"></div>
     <div class="modal-title">🥗 食事を記録</div>
 
-    <label class="form-label" style="margin-top:0">食品名・料理名</label>
+    <label class="form-label" style="margin-top:0">食事の区分</label>
+    <div style="display:flex;gap:6px">
+      <button class="slot-btn" id="slot-morning" onclick="selSlot('morning','07:00')">🌅<br><span>朝</span></button>
+      <button class="slot-btn" id="slot-lunch"   onclick="selSlot('lunch','12:00')">☀️<br><span>昼</span></button>
+      <button class="slot-btn" id="slot-dinner"  onclick="selSlot('dinner','19:00')">🌙<br><span>晩</span></button>
+      <button class="slot-btn" id="slot-snack"   onclick="selSlot('snack',null)">🍪<br><span>間食</span></button>
+    </div>
+
+    <label class="form-label">食品名・料理名</label>
     <div class="suggest-wrap">
       <input class="form-input" id="food-input" type="text"
         placeholder="入力すると候補が出ます" autocomplete="off" autocorrect="off"
@@ -458,6 +477,7 @@ let allStools   = [];
 let userDict    = []; // Firebaseから取得したユーザー追加の食品 [{id, name, fodmap}]
 let mealItems   = []; // 食事モーダルの一時リスト [{name, fodmap}]
 let curMealFodmap  = null;
+let curMealSlot    = null;   // 'morning' | 'lunch' | 'dinner' | 'snack'
 let curBristol     = null;
 let curPain        = null;
 let curDictFodmap  = null;
@@ -509,26 +529,26 @@ function fullDict() {
 function setupListeners() {
   mealRef().on('value', snap => {
     allMeals = [];
-    if (snap.exists()) snap.forEach(c => allMeals.push({id:c.key,...c.val()}));
+    snap.forEach(c => { const v = c.val(); if (v) allMeals.push({id:c.key, ...v}); });
     allMeals.sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
     renderToday();
     if (isActive('history')) renderHistoryDay(histDate);
     if (isActive('advice'))  renderAdvice();
-  }, e => console.error('meals',e));
+  }, e => { console.error('meals',e); showToast('⚠️ 読み込みエラー: ' + e.message); });
 
   stoolRef().on('value', snap => {
     allStools = [];
-    if (snap.exists()) snap.forEach(c => allStools.push({id:c.key,...c.val()}));
+    snap.forEach(c => { const v = c.val(); if (v) allStools.push({id:c.key, ...v}); });
     allStools.sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
     renderToday();
     if (isActive('history')) renderHistoryDay(histDate);
     if (isActive('advice'))  renderAdvice();
-  }, e => console.error('stools',e));
+  }, e => { console.error('stools',e); showToast('⚠️ 読み込みエラー: ' + e.message); });
 
   // FODMAP辞書
   dictRef().on('value', snap => {
     userDict = [];
-    if (snap.exists()) snap.forEach(c => userDict.push({id:c.key,...c.val()}));
+    snap.forEach(c => { const v = c.val(); if (v) userDict.push({id:c.key, ...v}); });
     if (isActive('foods')) renderDictList();
   }, e => console.error('dict',e));
 }
@@ -540,19 +560,29 @@ function isActive(name) { return document.getElementById('tab-'+name).classList.
 // ============================================================
 async function saveMeal() {
   if (mealItems.length === 0) { showToast('食品を1つ以上追加してください'); return; }
-  const timeVal = document.getElementById('meal-time').value || nowTime();
-  const dateVal = localDateStr();
-  const now = Date.now();
+  const timeVal  = document.getElementById('meal-time').value || nowTime();
+  const dateVal  = localDateStr();
+  const now      = Date.now();
+  const slotVal  = curMealSlot || null;
+  closeMealModal(); // 先に閉じてUXを改善
   try {
-    await Promise.all(mealItems.map((item, i) =>
-      mealRef(genId()).set({
-        name: item.name, fodmap: item.fodmap,
-        time: timeVal, date: dateVal, createdAt: now + i
-      })
-    ));
+    const saves = mealItems.map((item, i) => {
+      const data = {
+        name:      item.name,
+        fodmap:    item.fodmap || null,
+        slot:      slotVal,
+        time:      timeVal,
+        date:      dateVal,
+        createdAt: now + i
+      };
+      return mealRef().push(data);
+    });
+    await Promise.all(saves);
     showToast(`✅ ${mealItems.length}件の食事を記録しました`);
-    closeMealModal();
-  } catch(e) { console.error(e); showToast('❌ 保存失敗: ' + e.message); }
+  } catch(e) {
+    console.error('saveMeal error:', e);
+    showToast('❌ 保存失敗: ' + e.message);
+  }
 }
 
 // ============================================================
@@ -561,15 +591,21 @@ async function saveMeal() {
 async function saveStool() {
   if (curBristol === null) { showToast('タイプを選んでください'); return; }
   if (curPain    === null) { showToast('腹痛を選んでください');   return; }
+  const data = {
+    bristol:   curBristol,
+    pain:      curPain,
+    time:      document.getElementById('stool-time').value || nowTime(),
+    date:      localDateStr(),
+    createdAt: Date.now()
+  };
+  closeStoolModal(); // 先に閉じてUXを改善
   try {
-    await stoolRef(genId()).set({
-      bristol: curBristol, pain: curPain,
-      time: document.getElementById('stool-time').value || nowTime(),
-      date: localDateStr(), createdAt: Date.now()
-    });
+    await stoolRef().push(data);
     showToast('✅ 排便を記録しました');
-    closeStoolModal();
-  } catch(e) { console.error(e); showToast('❌ 保存失敗: ' + e.message); }
+  } catch(e) {
+    console.error('saveStool error:', e);
+    showToast('❌ 保存失敗: ' + e.message);
+  }
 }
 
 async function delMeal(id)  { if (!confirm('削除しますか？')) return; await mealRef(id).remove();  showToast('削除しました'); }
@@ -585,7 +621,7 @@ async function saveDictItem() {
   // 重複チェック
   if (fullDict().some(f => f.name === name)) { showToast('すでに一覧にあります'); return; }
   try {
-    await dictRef(genId()).set({name, fodmap: curDictFodmap, addedAt: Date.now()});
+    await dictRef().push({name, fodmap: curDictFodmap, addedAt: Date.now()});
     showToast(`✅ "${name}"をリストに追加しました`);
     closeDictBar();
     if (isActive('foods')) renderDictList();
@@ -664,16 +700,19 @@ function renderHistoryDay(ds) {
     : hdr + combined.map(r => buildRecItem(r, false)).join('');
 }
 
+const SLOT_LBL = {morning:'🌅朝', lunch:'☀️昼', dinner:'🌙晩', snack:'🍪間食'};
+
 function buildRecItem(r, showDel) {
   if (r._t === 'meal') {
-    const cls   = {low:'badge-low', mid:'badge-mid', high:'badge-high'}[r.fodmap] || '';
-    const badge = r.fodmap ? `<span class="badge ${cls}">${FODMAP_LBL[r.fodmap]}</span>` : '';
-    const del   = showDel ? `<button class="del-btn" onclick="delMeal('${r.id}')">削除</button>` : '';
+    const cls    = {low:'badge-low', mid:'badge-mid', high:'badge-high'}[r.fodmap] || '';
+    const badge  = r.fodmap ? `<span class="badge ${cls}">${FODMAP_LBL[r.fodmap]}</span>` : '';
+    const slotLbl = r.slot ? `<span style="font-size:10px;color:#64748b;margin-right:4px">${SLOT_LBL[r.slot]||''}</span>` : '';
+    const del    = showDel ? `<button class="del-btn" onclick="delMeal('${r.id}')">削除</button>` : '';
     return `<div class="rec-item">
       <div class="rec-dot dot-meal"></div>
       <div class="rec-time">${r.time||''}</div>
       <div style="flex:1;min-width:0">
-        <div class="rec-name">${escHtml(r.name)}</div>
+        <div class="rec-name">${slotLbl}${escHtml(r.name)}</div>
         ${badge}
       </div>${del}</div>`;
   } else {
@@ -815,14 +854,24 @@ function selDictFodmap(lvl) {
 function openMealModal() {
   mealItems     = [];
   curMealFodmap = null;
+  curMealSlot   = null;
   document.getElementById('food-input').value        = '';
   document.getElementById('meal-time').value         = nowTime();
   document.getElementById('food-list').style.display = 'none';
   document.getElementById('food-list').innerHTML     = '';
   document.getElementById('suggest-list').classList.remove('open');
   document.getElementById('fodmap-auto-hint').style.display = 'none';
+  document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('sel'));
   document.getElementById('meal-modal').classList.add('open');
   setTimeout(() => document.getElementById('food-input').focus(), 300);
+}
+
+// 食事区分ボタン
+function selSlot(slot, defaultTime) {
+  curMealSlot = slot;
+  document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('slot-' + slot).classList.add('sel');
+  if (defaultTime) document.getElementById('meal-time').value = defaultTime;
 }
 function closeMealModal() {
   document.getElementById('meal-modal').classList.remove('open');
